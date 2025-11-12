@@ -7,5 +7,5 @@ export interface Store<State> {
 export interface ESStore<Event> {
   load(key: string): Promise<Event[]>;
   append(key: string, events: Event[]): Promise<void>;
-  purge(id: string): Promise<void>;
+  purge(key: string): Promise<void>;
 }
