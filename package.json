@@ -17,6 +17,7 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "ioredis": "^5.8.2"
+    "ioredis": "^5.8.2",
+    "neverthrow": "^8.2.0"
   }
 }
