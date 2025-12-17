@@ -3,7 +3,7 @@ export interface Decider<State, CommandType extends Command, EventType extends E
   evolve: (currentState: State, event: EventType) => State;
 }
 
-interface Event<
+export interface Event<
   EventType extends string = string,
   EventData extends Record<string, unknown> = Record<string, unknown>,
 > {
@@ -11,7 +11,7 @@ interface Event<
   data: EventData;
 }
 
-interface Command<
+export interface Command<
   CommandType extends string = string,
   CommandData extends Record<string, unknown> = Record<string, unknown>,
 > {
@@ -66,3 +66,8 @@ export function createDeciderAggregate<State, CommandType extends Command, Event
     },
   };
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type Aggregate<D extends Decider<any, any, any>> = D extends Decider<infer S, infer C, infer E>
+  ? ReturnType<typeof createDeciderAggregate<S, C, E>>
+  : never;

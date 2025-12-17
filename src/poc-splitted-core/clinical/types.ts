@@ -1,3 +1,5 @@
+import type { Decider } from '../../@utils/decider';
+
 export interface State {
   id: string;
   sessions: { id: string; number: number; startAt: Date }[];
@@ -16,3 +18,5 @@ interface SessionClassifiedEvent {
 }
 
 export type Event = SessionClassifiedEvent;
+
+export type ClinicalDecider = Decider<State, Command, Event>;

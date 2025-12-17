@@ -5,8 +5,8 @@ export function decide(cmd: Command, state: State): Event[] {
     case 'CLASSIFY_SESSION': {
       // Create a list with all sessions including the new one
       const allSessions = [
-        ...state.sessions.map(s => ({ id: s.id, startAt: s.startAt, oldNumber: s.number })),
-        { id: cmd.data.id, startAt: cmd.data.startAt, oldNumber: undefined }
+        ...state.sessions.map((s) => ({ id: s.id, startAt: s.startAt, oldNumber: s.number })),
+        { id: cmd.data.id, startAt: cmd.data.startAt, oldNumber: undefined },
       ];
 
       // Sort by startAt (ascending - earliest date gets number 1)
@@ -24,8 +24,8 @@ export function decide(cmd: Command, state: State): Event[] {
             data: {
               id: session.id,
               number: newNumber,
-              startAt: session.startAt
-            }
+              startAt: session.startAt,
+            },
           });
         }
       });

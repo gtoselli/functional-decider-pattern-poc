@@ -1,3 +1,5 @@
+import type { Decider } from '../../@utils/decider';
+
 export interface State {
   id: string;
   appointments: {
@@ -21,16 +23,18 @@ interface CancelAppointmentCmd {
 }
 export type Command = ScheduleAppointmentCmd | RescheduleAppointmentCmd | CancelAppointmentCmd;
 
-interface AppointmentScheduledCmd {
+interface AppointmentScheduledEvent {
   type: 'APPOINTMENT_SCHEDULED';
   data: { id: string; startAt: Date };
 }
-interface AppointmentRescheduledCmd {
+interface AppointmentRescheduledEvent {
   type: 'APPOINTMENT_RESCHEDULED';
   data: { id: string; startAt: Date };
 }
-interface AppointmentCancelledCmd {
+interface AppointmentCancelledEvent {
   type: 'APPOINTMENT_CANCELLED';
   data: { id: string; cancelledAt: Date };
 }
-export type Event = AppointmentScheduledCmd | AppointmentRescheduledCmd | AppointmentCancelledCmd;
+export type Event = AppointmentScheduledEvent | AppointmentRescheduledEvent | AppointmentCancelledEvent;
+
+export type BookingDecider = Decider<State, Command, Event>;

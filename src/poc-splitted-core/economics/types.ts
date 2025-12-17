@@ -1,3 +1,5 @@
+import type { Decider } from '../../@utils/decider';
+
 export interface State {
   id: string;
   prices: {
@@ -20,3 +22,5 @@ interface PriceEvaluatedEvent {
 }
 
 export type Event = PriceEvaluatedEvent;
+
+export type EconomicsDecider = Decider<State, Command, Event>;
