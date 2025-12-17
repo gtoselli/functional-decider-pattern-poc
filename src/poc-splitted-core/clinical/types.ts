@@ -1,21 +1,18 @@
 export interface State {
   id: string;
-  paths: {
-    id: string;
-    sessions: { id: string; number: number };
-  }[];
+  sessions: { id: string; number: number; startAt: Date }[];
 }
 
 interface ClassifySessionCmd {
   type: 'CLASSIFY_SESSION';
-  data: { appointmentId: string; startAt: Date };
+  data: { id: string; startAt: Date };
 }
 
 export type Command = ClassifySessionCmd;
 
 interface SessionClassifiedEvent {
   type: 'SESSION_CLASSIFIED';
-  data: { id: string; appointmentId: string; number: number };
+  data: { id: string; number: number; startAt: Date };
 }
 
 export type Event = SessionClassifiedEvent;
