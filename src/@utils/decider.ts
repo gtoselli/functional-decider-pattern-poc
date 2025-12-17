@@ -39,3 +39,30 @@ export function createDeciderRunner<State, CommandType extends Command, EventTyp
     },
   };
 }
+
+export function createDeciderAggregate<State, CommandType extends Command, EventType extends Event>(
+  decider: Decider<State, CommandType, EventType>,
+  initialState: State,
+) {
+  let currentState = initialState;
+  const uncommittedEvents: EventType[] = [];
+
+  return {
+    getEvents() {
+      return uncommittedEvents;
+    },
+    getState() {
+      return currentState;
+    },
+    resetToInitialState() {
+      currentState = initialState;
+      uncommittedEvents.length = 0;
+    },
+    run(command: CommandType): EventType[] {
+      const events = decider.decide(command, currentState);
+      currentState = events.reduce(decider.evolve, currentState);
+      uncommittedEvents.push(...events);
+      return events;
+    },
+  };
+}
