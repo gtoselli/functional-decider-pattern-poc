@@ -3,7 +3,7 @@ export interface State {
   prices: {
     id: string;
     cost: number;
-    reason: '';
+    reason: 'first_session' | 'standard';
   }[];
 }
 
