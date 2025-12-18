@@ -1,19 +1,18 @@
-import type { Aggregate } from '../../@utils/decider';
 import { executeSaga, requireEvent, type SagaStep } from '../../@utils/saga';
-import type { BookingDecider, Event as BookingEvent } from '../booking/types';
-import type { ClinicalDecider, Event as ClinicalEvent } from '../clinical/types';
-import type { EconomicsDecider, Event as EconomicsEvent } from '../economics/types';
+import type { Event as BookingEvent } from '../booking/types';
+import type { Event as ClinicalEvent } from '../clinical/types';
+import type { Event as EconomicsEvent } from '../economics/types';
 import type { createBookingRepo, createClinicalRepo, createEconomicsRepo } from '../infra';
 
 type Event = BookingEvent | ClinicalEvent | EconomicsEvent;
 
-type Actors = {
-  booking: Aggregate<BookingDecider>;
-  clinical: Aggregate<ClinicalDecider>;
-  economics: Aggregate<EconomicsDecider>;
+type Dependencies = {
+  booking: ReturnType<typeof createBookingRepo>;
+  clinical: ReturnType<typeof createClinicalRepo>;
+  economics: ReturnType<typeof createEconomicsRepo>;
 };
 
-type Params = { startAt: Date };
+type Params = { patientId: string; startAt: Date };
 
 export function scheduleSessionUseCase(
   bookingRepo: ReturnType<typeof createBookingRepo>,
@@ -22,42 +21,41 @@ export function scheduleSessionUseCase(
 ) {
   return {
     run(params: { patientId: string; startAt: Date }) {
-      const booking = bookingRepo.getById(params.patientId);
-      const clinical = clinicalRepo.getById(params.patientId);
-      const economics = economicsRepo.getById(params.patientId);
+      const dependencies: Dependencies = {
+        booking: bookingRepo,
+        clinical: clinicalRepo,
+        economics: economicsRepo,
+      };
 
-      const result = executeSaga(SCHEDULE_SESSION_SAGA, { booking, clinical, economics }, { startAt: params.startAt });
-
-      bookingRepo.save(booking);
-      clinicalRepo.save(clinical);
-      economicsRepo.save(economics);
-      return result;
+      return executeSaga(SCHEDULE_SESSION_SAGA, dependencies, params);
     },
   };
 }
 
-// Simplified saga - price evaluation happens automatically via PRICING_POLICY!
-const SCHEDULE_SESSION_SAGA: SagaStep<Actors, Params, Event>[] = [
+const SCHEDULE_SESSION_SAGA: SagaStep<Dependencies, Params, Event>[] = [
   // Step 1: Schedule appointment
-  (_context, actors, params) => {
-    return actors.booking.run({
+  (_context, deps, params) => {
+    const booking = deps.booking.getById(params.patientId);
+    const events = booking.run({
       type: 'SCHEDULE_APPOINTMENT' as const,
       data: { startAt: params.startAt },
     });
+    deps.booking.save(booking);
+    return events;
   },
 
-  // Step 2: Classify session
   // Note: Price evaluation happens automatically via PRICING_POLICY
-  (context, actors, _params) => {
+  (context, deps, params) => {
     const appointmentEvent = requireEvent(context, 'APPOINTMENT_SCHEDULED');
-    return actors.clinical.run({
+    const clinical = deps.clinical.getById(params.patientId);
+    const events = clinical.run({
       type: 'CLASSIFY_SESSION' as const,
       data: {
         id: appointmentEvent.data.id,
         startAt: appointmentEvent.data.startAt,
       },
     });
+    deps.clinical.save(clinical);
+    return events;
   },
-
-  // Step 3 removed! PRICING_POLICY automatically evaluates price when SESSION_CLASSIFIED is emitted
 ];

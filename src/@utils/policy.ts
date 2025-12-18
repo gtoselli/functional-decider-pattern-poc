@@ -1,17 +1,18 @@
 import type { Event } from './decider';
 
 // Policy - automatic reaction to events
-export type Policy<Aggregates, Events extends Event = Event> = {
+// Receives dependencies to get/save aggregates as needed
+export type Policy<Dependencies, Events extends Event = Event> = {
   when: Events['type'];
-  then: (event: Events, aggregates: Aggregates) => Events[];
+  then: (event: Events, dependencies: Dependencies) => Events[];
 };
 
 // Global policy registry
 const GLOBAL_POLICIES: Policy<any, any>[] = [];
 
 // Register a policy globally
-export function registerPolicy<Aggregates, Events extends Event = Event>(
-  policy: Policy<Aggregates, Events>,
+export function registerPolicy<Dependencies, Events extends Event = Event>(
+  policy: Policy<Dependencies, Events>,
 ): void {
   GLOBAL_POLICIES.push(policy);
 }
@@ -22,10 +23,10 @@ export function clearPolicies(): void {
 }
 
 // Apply policies to an event
-export function applyPolicies<Aggregates, Events extends Event = Event>(
+export function applyPolicies<Dependencies, Events extends Event = Event>(
   event: Events,
-  aggregates: Aggregates,
+  dependencies: Dependencies,
 ): Events[] {
   const matchingPolicies = GLOBAL_POLICIES.filter((p) => p.when === event.type);
-  return matchingPolicies.flatMap((policy) => policy.then(event, aggregates));
+  return matchingPolicies.flatMap((policy) => policy.then(event, dependencies));
 }

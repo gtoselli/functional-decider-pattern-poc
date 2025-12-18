@@ -6,10 +6,10 @@ export type SagaContext<Events extends Event = Event> = {
   events: Events[];
 };
 
-// Saga step - a function that runs commands and returns events
-export type SagaStep<Aggregates, Params, Events extends Event = Event> = (
+// Saga step - a function that gets aggregate, runs command, saves, and returns events
+export type SagaStep<Dependencies, Params, Events extends Event = Event> = (
   context: SagaContext<Events>,
-  aggregates: Aggregates,
+  dependencies: Dependencies,
   params: Params,
 ) => Events[];
 
@@ -19,9 +19,9 @@ export type SagaResult<Events extends Event = Event> =
   | { success: false; error: string; events: Events[] };
 
 // Saga executor with automatic policy application
-export function executeSaga<Aggregates, Params, Events extends Event = Event>(
-  steps: SagaStep<Aggregates, Params, Events>[],
-  aggregates: Aggregates,
+export function executeSaga<Dependencies, Params, Events extends Event = Event>(
+  steps: SagaStep<Dependencies, Params, Events>[],
+  dependencies: Dependencies,
   params: Params,
 ): SagaResult<Events> {
   const context: SagaContext<Events> = {
@@ -30,12 +30,13 @@ export function executeSaga<Aggregates, Params, Events extends Event = Event>(
 
   try {
     for (const step of steps) {
-      const producedEvents = step(context, aggregates, params);
+      const producedEvents = step(context, dependencies, params);
       context.events.push(...producedEvents);
 
       // Apply policies to each produced event
+      // Note: Policies also need access to dependencies now
       for (const event of producedEvents) {
-        const policyEvents = applyPolicies(event, aggregates);
+        const policyEvents = applyPolicies(event, dependencies);
         context.events.push(...policyEvents);
       }
     }
