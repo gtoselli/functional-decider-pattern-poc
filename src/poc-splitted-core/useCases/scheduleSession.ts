@@ -1,5 +1,5 @@
 import type { Aggregate } from '../../@utils/decider';
-import { executeSaga, getAllEventsByType, requireEvent, type SagaStep } from '../../@utils/saga';
+import { executeSaga, requireEvent, type SagaStep } from '../../@utils/saga';
 import type { BookingDecider, Event as BookingEvent } from '../booking/types';
 import type { ClinicalDecider, Event as ClinicalEvent } from '../clinical/types';
 import type { EconomicsDecider, Event as EconomicsEvent } from '../economics/types';
@@ -36,7 +36,9 @@ export function scheduleSessionUseCase(
   };
 }
 
+// Simplified saga - price evaluation happens automatically via PRICING_POLICY!
 const SCHEDULE_SESSION_SAGA: SagaStep<Actors, Params, Event>[] = [
+  // Step 1: Schedule appointment
   (_context, actors, params) => {
     return actors.booking.run({
       type: 'SCHEDULE_APPOINTMENT' as const,
@@ -44,6 +46,8 @@ const SCHEDULE_SESSION_SAGA: SagaStep<Actors, Params, Event>[] = [
     });
   },
 
+  // Step 2: Classify session
+  // Note: Price evaluation happens automatically via PRICING_POLICY
   (context, actors, _params) => {
     const appointmentEvent = requireEvent(context, 'APPOINTMENT_SCHEDULED');
     return actors.clinical.run({
@@ -55,16 +59,5 @@ const SCHEDULE_SESSION_SAGA: SagaStep<Actors, Params, Event>[] = [
     });
   },
 
-  (context, actors, _params) => {
-    const sessionEvents = getAllEventsByType(context, 'SESSION_CLASSIFIED');
-    return sessionEvents.flatMap((sessionEvent) => {
-      return actors.economics.run({
-        type: 'EVALUATE_PRICE' as const,
-        data: {
-          sessionId: sessionEvent.data.id,
-          number: sessionEvent.data.number,
-        },
-      });
-    });
-  },
+  // Step 3 removed! PRICING_POLICY automatically evaluates price when SESSION_CLASSIFIED is emitted
 ];

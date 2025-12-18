@@ -1,4 +1,5 @@
 import type { Event } from './decider';
+import { applyPolicies } from './policy';
 
 // Context holds all events produced so far
 export type SagaContext<Events extends Event = Event> = {
@@ -17,7 +18,7 @@ export type SagaResult<Events extends Event = Event> =
   | { success: true; events: Events[] }
   | { success: false; error: string; events: Events[] };
 
-// Saga executor
+// Saga executor with automatic policy application
 export function executeSaga<Aggregates, Params, Events extends Event = Event>(
   steps: SagaStep<Aggregates, Params, Events>[],
   aggregates: Aggregates,
@@ -31,6 +32,12 @@ export function executeSaga<Aggregates, Params, Events extends Event = Event>(
     for (const step of steps) {
       const producedEvents = step(context, aggregates, params);
       context.events.push(...producedEvents);
+
+      // Apply policies to each produced event
+      for (const event of producedEvents) {
+        const policyEvents = applyPolicies(event, aggregates);
+        context.events.push(...policyEvents);
+      }
     }
 
     return {
