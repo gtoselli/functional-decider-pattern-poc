@@ -79,6 +79,7 @@ describe('bookingDecider', () => {
         data: {
           id: expect.any(String),
           cancelledAt: expect.any(Date),
+          startAt: expect.any(Date),
         },
         type: 'APPOINTMENT_CANCELLED',
       },

@@ -33,7 +33,7 @@ interface AppointmentRescheduledEvent {
 }
 interface AppointmentCancelledEvent {
   type: 'APPOINTMENT_CANCELLED';
-  data: { id: string; cancelledAt: Date };
+  data: { id: string; cancelledAt: Date; startAt: Date };
 }
 export type Event = AppointmentScheduledEvent | AppointmentRescheduledEvent | AppointmentCancelledEvent;
 

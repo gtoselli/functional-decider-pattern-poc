@@ -11,7 +11,12 @@ export function decide(cmd: Command, state: State): Event[] {
       if (!app) throw new Error('Appointment not found');
       if (app.cancelledAt) throw new Error('Appointment already cancelled');
 
-      return [{ data: { id: cmd.data.id, cancelledAt: new Date() }, type: 'APPOINTMENT_CANCELLED' }];
+      return [
+        {
+          data: { id: cmd.data.id, cancelledAt: new Date(), startAt: app.startAt },
+          type: 'APPOINTMENT_CANCELLED',
+        },
+      ];
     }
     case 'RESCHEDULE_APPOINTMENT': {
       const app = state.appointments.find((a) => a.id === cmd.data.id);
