@@ -18,7 +18,7 @@ export function createBookingRepo() {
       STATE[aggregate.getState().id] = aggregate.getState();
     },
     getById(id: string) {
-      return createDeciderAggregate(bookingDecider, STATE[id] || { id, appointments: [] });
+      return createDeciderAggregate(bookingDecider, STATE[id] || { id, events: [] });
     },
   };
 }

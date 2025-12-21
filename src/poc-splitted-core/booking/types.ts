@@ -2,39 +2,39 @@ import type { Decider } from '../../@utils/decider';
 
 export interface State {
   id: string;
-  appointments: {
+  events: {
     id: string;
     startAt: Date;
     cancelledAt: Date | null;
   }[];
 }
 
-interface ScheduleAppointmentCmd {
-  type: 'SCHEDULE_APPOINTMENT';
+interface ScheduleEventCmd {
+  type: 'SCHEDULE_EVENT';
   data: { startAt: Date };
 }
-interface RescheduleAppointmentCmd {
-  type: 'RESCHEDULE_APPOINTMENT';
+interface RescheduleEventCmd {
+  type: 'RESCHEDULE_EVENT';
   data: { id: string; startAt: Date };
 }
-interface CancelAppointmentCmd {
-  type: 'CANCEL_APPOINTMENT';
+interface CancelEventCmd {
+  type: 'CANCEL_EVENT';
   data: { id: string };
 }
-export type Command = ScheduleAppointmentCmd | RescheduleAppointmentCmd | CancelAppointmentCmd;
+export type Command = ScheduleEventCmd | RescheduleEventCmd | CancelEventCmd;
 
-interface AppointmentScheduledEvent {
-  type: 'APPOINTMENT_SCHEDULED';
+interface EventScheduledEvent {
+  type: 'EVENT_SCHEDULED';
   data: { id: string; startAt: Date };
 }
-interface AppointmentRescheduledEvent {
-  type: 'APPOINTMENT_RESCHEDULED';
+interface EventRescheduledEvent {
+  type: 'EVENT_RESCHEDULED';
   data: { id: string; startAt: Date };
 }
-interface AppointmentCancelledEvent {
-  type: 'APPOINTMENT_CANCELLED';
+interface EventCancelledEvent {
+  type: 'EVENT_CANCELLED';
   data: { id: string; cancelledAt: Date; startAt: Date };
 }
-export type Event = AppointmentScheduledEvent | AppointmentRescheduledEvent | AppointmentCancelledEvent;
+export type Event = EventScheduledEvent | EventRescheduledEvent | EventCancelledEvent;
 
 export type BookingDecider = Decider<State, Command, Event>;

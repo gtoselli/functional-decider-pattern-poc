@@ -5,15 +5,15 @@ import type { State } from './types';
 
 describe('bookingDecider', () => {
   const id = 'foo-patient-id';
-  const INITIAL_STATE = { id, appointments: [] } satisfies State;
+  const INITIAL_STATE = { id, events: [] } satisfies State;
   const aggregate = createDeciderAggregate(bookingDecider, INITIAL_STATE);
 
   beforeEach(() => {
     aggregate.resetToInitialState();
   });
 
-  it('schedule appointment', () => {
-    const events = aggregate.run({ type: 'SCHEDULE_APPOINTMENT', data: { startAt: new Date('2000-07-01') } });
+  it('schedule event', () => {
+    const events = aggregate.run({ type: 'SCHEDULE_EVENT', data: { startAt: new Date('2000-07-01') } });
 
     expect(events).toEqual([
       {
@@ -21,11 +21,11 @@ describe('bookingDecider', () => {
           id: expect.any(String),
           startAt: new Date('2000-07-01'),
         },
-        type: 'APPOINTMENT_SCHEDULED',
+        type: 'EVENT_SCHEDULED',
       },
     ]);
     expect(aggregate.getState()).toEqual({
-      appointments: [
+      events: [
         {
           cancelledAt: null,
           id: expect.any(String),
@@ -36,13 +36,13 @@ describe('bookingDecider', () => {
     });
   });
 
-  it('rescheduled appointment', () => {
+  it('rescheduled event', () => {
     const originalStartAt = new Date('2000-07-01');
-    aggregate.run({ type: 'SCHEDULE_APPOINTMENT', data: { startAt: originalStartAt } });
+    aggregate.run({ type: 'SCHEDULE_EVENT', data: { startAt: originalStartAt } });
 
     const events = aggregate.run({
-      type: 'RESCHEDULE_APPOINTMENT',
-      data: { id: aggregate.getState()['appointments'][0].id, startAt: new Date('2000-07-02') },
+      type: 'RESCHEDULE_EVENT',
+      data: { id: aggregate.getState()['events'][0].id, startAt: new Date('2000-07-02') },
     });
 
     expect(events).toEqual([
@@ -51,11 +51,11 @@ describe('bookingDecider', () => {
           id: expect.any(String),
           startAt: new Date('2000-07-02'),
         },
-        type: 'APPOINTMENT_RESCHEDULED',
+        type: 'EVENT_RESCHEDULED',
       },
     ]);
     expect(aggregate.getState()).toEqual({
-      appointments: [
+      events: [
         {
           cancelledAt: null,
           id: expect.any(String),
@@ -66,12 +66,12 @@ describe('bookingDecider', () => {
     });
   });
 
-  it('cancel appointment', () => {
-    aggregate.run({ type: 'SCHEDULE_APPOINTMENT', data: { startAt: new Date('2000-07-01') } });
+  it('cancel event', () => {
+    aggregate.run({ type: 'SCHEDULE_EVENT', data: { startAt: new Date('2000-07-01') } });
 
     const events = aggregate.run({
-      type: 'CANCEL_APPOINTMENT',
-      data: { id: aggregate.getState()['appointments'][0].id },
+      type: 'CANCEL_EVENT',
+      data: { id: aggregate.getState()['events'][0].id },
     });
 
     expect(events).toEqual([
@@ -81,11 +81,11 @@ describe('bookingDecider', () => {
           cancelledAt: expect.any(Date),
           startAt: expect.any(Date),
         },
-        type: 'APPOINTMENT_CANCELLED',
+        type: 'EVENT_CANCELLED',
       },
     ]);
     expect(aggregate.getState()).toEqual({
-      appointments: [
+      events: [
         {
           cancelledAt: expect.any(Date),
           id: expect.any(String),

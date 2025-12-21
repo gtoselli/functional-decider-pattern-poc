@@ -3,27 +3,27 @@ import type { Command, Event, State } from './types';
 
 export function decide(cmd: Command, state: State): Event[] {
   switch (cmd.type) {
-    case 'SCHEDULE_APPOINTMENT': {
-      return [{ data: { id: randomUUID(), startAt: cmd.data.startAt }, type: 'APPOINTMENT_SCHEDULED' }];
+    case 'SCHEDULE_EVENT': {
+      return [{ data: { id: randomUUID(), startAt: cmd.data.startAt }, type: 'EVENT_SCHEDULED' }];
     }
-    case 'CANCEL_APPOINTMENT': {
-      const app = state.appointments.find((a) => a.id === cmd.data.id);
-      if (!app) throw new Error('Appointment not found');
-      if (app.cancelledAt) throw new Error('Appointment already cancelled');
+    case 'CANCEL_EVENT': {
+      const event = state.events.find((a) => a.id === cmd.data.id);
+      if (!event) throw new Error('Event not found');
+      if (event.cancelledAt) throw new Error('Event already cancelled');
 
       return [
         {
-          data: { id: cmd.data.id, cancelledAt: new Date(), startAt: app.startAt },
-          type: 'APPOINTMENT_CANCELLED',
+          data: { id: cmd.data.id, cancelledAt: new Date(), startAt: event.startAt },
+          type: 'EVENT_CANCELLED',
         },
       ];
     }
-    case 'RESCHEDULE_APPOINTMENT': {
-      const app = state.appointments.find((a) => a.id === cmd.data.id);
-      if (!app) throw new Error('Appointment not found');
-      if (app.cancelledAt) throw new Error('Appointment cancelled');
+    case 'RESCHEDULE_EVENT': {
+      const event = state.events.find((a) => a.id === cmd.data.id);
+      if (!event) throw new Error('Event not found');
+      if (event.cancelledAt) throw new Error('Event cancelled');
 
-      return [{ data: { id: cmd.data.id, startAt: cmd.data.startAt }, type: 'APPOINTMENT_RESCHEDULED' }];
+      return [{ data: { id: cmd.data.id, startAt: cmd.data.startAt }, type: 'EVENT_RESCHEDULED' }];
     }
 
     default: {

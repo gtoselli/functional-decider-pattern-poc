@@ -6,21 +6,32 @@ export interface State {
     id: string;
     cost: number;
     reason: 'first_session' | 'standard';
+    status: 'quoted' | 'released';
   }[];
 }
 
-interface EvaluatePriceCmd {
-  type: 'EVALUATE_PRICE';
+interface QuoteServiceCmd {
+  type: 'QUOTE_SERVICE';
   data: { sessionId: string; number: number };
 }
 
-export type Command = EvaluatePriceCmd;
+interface ReleaseQuoteCmd {
+  type: 'RELEASE_QUOTE';
+  data: { sessionId: string };
+}
 
-interface PriceEvaluatedEvent {
-  type: 'PRICE_EVALUATED';
+export type Command = QuoteServiceCmd | ReleaseQuoteCmd;
+
+interface ServiceQuotedEvent {
+  type: 'SERVICE_QUOTED';
   data: { id: string; cost: number; reason: State['prices'][0]['reason'] };
 }
 
-export type Event = PriceEvaluatedEvent;
+interface QuoteReleasedEvent {
+  type: 'QUOTE_RELEASED';
+  data: { id: string };
+}
+
+export type Event = ServiceQuotedEvent | QuoteReleasedEvent;
 
 export type EconomicsDecider = Decider<State, Command, Event>;

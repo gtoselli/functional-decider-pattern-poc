@@ -2,35 +2,35 @@ import type { Event, State } from './types';
 
 export function evolve(state: State, event: Event): State {
   switch (event.type) {
-    case 'APPOINTMENT_SCHEDULED': {
+    case 'EVENT_SCHEDULED': {
       return {
         ...state,
-        appointments: [...state.appointments, { id: event.data.id, startAt: event.data.startAt, cancelledAt: null }],
+        events: [...state.events, { id: event.data.id, startAt: event.data.startAt, cancelledAt: null }],
       };
     }
-    case 'APPOINTMENT_CANCELLED': {
+    case 'EVENT_CANCELLED': {
       return {
         ...state,
-        appointments: state.appointments.map((a) =>
-          a.id === event.data.id
+        events: state.events.map((e) =>
+          e.id === event.data.id
             ? {
-                ...a,
+                ...e,
                 cancelledAt: event.data.cancelledAt,
               }
-            : a,
+            : e,
         ),
       };
     }
-    case 'APPOINTMENT_RESCHEDULED': {
+    case 'EVENT_RESCHEDULED': {
       return {
         ...state,
-        appointments: state.appointments.map((a) =>
-          a.id === event.data.id
+        events: state.events.map((e) =>
+          e.id === event.data.id
             ? {
-                ...a,
+                ...e,
                 startAt: event.data.startAt,
               }
-            : a,
+            : e,
         ),
       };
     }
