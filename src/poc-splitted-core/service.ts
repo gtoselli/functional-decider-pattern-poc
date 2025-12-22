@@ -144,5 +144,17 @@ export function createService(
       if (!event || !session || !price) throw new Error('Session not found');
       return { event, session, price };
     },
+
+    async getEvent(patientId: string, eventId: string) {
+      const booking = bookingRepo.getById(patientId).getState();
+
+      return booking.events.find((e) => e.id === eventId);
+    },
+
+    async getPath(patientId: string, pathId: string) {
+      const clinical = clinicalRepo.getById(patientId).getState();
+
+      return clinical.paths.find((p) => p.id === pathId);
+    },
   };
 }

@@ -8,7 +8,7 @@ export interface State {
     type: PathType;
     startedAt: Date;
     professionals: { id: string; addedAt: Date }[];
-    sessions: { id: string; number: number; startAt: Date; revokedAt?: Date }[];
+    sessions: { id: string; number: number; startAt: Date; revokedAt: Date | null }[];
   }[];
 }
 

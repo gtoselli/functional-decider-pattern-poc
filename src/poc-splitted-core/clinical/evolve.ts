@@ -22,7 +22,13 @@ export function evolve(state: State, event: Event): State {
         ...state,
         paths: state.paths.map((p) =>
           p.id === event.data.pathId
-            ? { ...p, sessions: [...p.sessions, { id: event.data.id, startAt: event.data.startAt, number: 0 }] }
+            ? {
+                ...p,
+                sessions: [
+                  ...p.sessions,
+                  { id: event.data.id, startAt: event.data.startAt, number: 0, revokedAt: null },
+                ],
+              }
             : p,
         ),
       };

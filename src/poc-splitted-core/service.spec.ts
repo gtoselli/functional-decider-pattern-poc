@@ -17,14 +17,14 @@ describe('service', () => {
   });
 
   describe('startPath', () => {
-    it('should start path', async () => {
-      const res = await service.startPath({ patientId, pathType: 'wlm', professionalId });
+    it('should start path in clinical context', async () => {
+      const { pathId } = await service.startPath({ patientId, pathType: 'wlm', professionalId });
 
       expect(clinicalRepo.getById(patientId).getState()).toEqual({
         id: patientId,
         paths: [
           {
-            id: res.pathId,
+            id: pathId,
             professionals: [{ id: professionalId, addedAt: expect.any(Date) }],
             sessions: [],
             startedAt: expect.any(Date),
@@ -45,9 +45,9 @@ describe('service', () => {
     });
 
     it('should create session', async () => {
-      const res = await service.scheduleSession({ patientId, startAt, pathId });
+      const { sessionId } = await service.scheduleSession({ patientId, startAt, pathId });
 
-      const session = await service.getSession(patientId, res.sessionId);
+      const session = await service.getSession(patientId, sessionId);
       expect(session).toEqual({
         event: {
           id: expect.any(String),
@@ -58,6 +58,7 @@ describe('service', () => {
           id: expect.any(String),
           startAt,
           number: 1,
+          revokedAt: null,
         },
         price: {
           id: expect.any(String),
@@ -74,8 +75,8 @@ describe('service', () => {
     const startAt = new Date('2025-12-31');
 
     beforeEach(async () => {
-      const pathRes = await service.startPath({ patientId, pathType: 'wlm', professionalId });
-      const res = await service.scheduleSession({ patientId, startAt: new Date('2026-01-01'), pathId: pathRes.pathId });
+      const { pathId } = await service.startPath({ patientId, pathType: 'wlm', professionalId });
+      const res = await service.scheduleSession({ patientId, startAt: new Date('2026-01-01'), pathId: pathId });
       sessionId = res.sessionId;
     });
 
@@ -93,6 +94,7 @@ describe('service', () => {
           id: expect.any(String),
           startAt,
           number: 1,
+          revokedAt: null,
         },
         price: {
           id: expect.any(String),
@@ -105,35 +107,50 @@ describe('service', () => {
   });
 
   describe('cancelSession', () => {
+    let pathId: string;
     let sessionId: string;
     beforeEach(async () => {
       const pathRes = await service.startPath({ patientId, pathType: 'wlm', professionalId });
-      const res = await service.scheduleSession({ patientId, startAt: new Date('2026-01-01'), pathId: pathRes.pathId });
+      pathId = pathRes.pathId;
+      const res = await service.scheduleSession({ patientId, startAt: new Date('2026-01-01'), pathId });
       sessionId = res.sessionId;
+      await service.scheduleSession({ patientId, startAt: new Date('2026-01-02'), pathId });
+      await service.scheduleSession({ patientId, startAt: new Date('2026-01-03'), pathId });
+
+      await service.cancelSession({ sessionId, patientId });
     });
 
-    it('should cancel session', async () => {
-      await service.cancelSession({ sessionId, patientId });
+    it('should cancel event in booking context', async () => {
+      expect(await service.getEvent(patientId, sessionId)).toMatchObject({
+        cancelledAt: expect.any(Date),
+      });
+    });
 
-      const session = await service.getSession(patientId, sessionId);
-      expect(session).toEqual({
-        event: {
-          id: expect.any(String),
-          startAt: expect.any(Date),
-          cancelledAt: expect.any(Date),
-        },
-        session: {
-          id: expect.any(String),
-          startAt: expect.any(Date),
-          number: 1,
-          revokedAt: expect.any(Date),
-        },
-        price: {
-          id: expect.any(String),
-          cost: 0,
-          reason: 'first_session',
-          status: 'released',
-        },
+    it('should revoke session in clinical context', async () => {
+      expect(await service.getPath(patientId, pathId)).toMatchObject({
+        sessions: expect.arrayContaining([expect.objectContaining({ id: sessionId, revokedAt: expect.any(Date) })]),
+      });
+    });
+
+    it('should reassess path sequence in clinical context', async () => {
+      expect(await service.getPath(patientId, pathId)).toMatchObject({
+        sessions: [{ id: sessionId, number: 1 }, { number: 1 }, { number: 2 }],
+      });
+    });
+
+    it('should release quote in economics context', async () => {
+      expect(economicsRepo.getById(patientId).getState()).toMatchObject({
+        prices: expect.arrayContaining([expect.objectContaining({ id: sessionId, status: 'released' })]),
+      });
+    });
+
+    it('should re quote other prices in economics context', async () => {
+      expect(economicsRepo.getById(patientId).getState()).toMatchObject({
+        prices: [
+          { id: sessionId, status: 'released', cost: 0 },
+          { status: 'quoted', cost: 0 },
+          { status: 'quoted', cost: 4500 },
+        ],
       });
     });
   });
