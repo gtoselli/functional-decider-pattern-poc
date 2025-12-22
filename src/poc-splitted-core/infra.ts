@@ -31,7 +31,7 @@ export function createClinicalRepo() {
       STATE[aggregate.getState().id] = aggregate.getState();
     },
     getById(id: string) {
-      return createDeciderAggregate(clinicalDecider, STATE[id] || { id, sessions: [] });
+      return createDeciderAggregate(clinicalDecider, STATE[id] || { id, paths: [] });
     },
   };
 }

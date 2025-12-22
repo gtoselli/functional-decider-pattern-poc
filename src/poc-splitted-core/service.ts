@@ -1,4 +1,5 @@
 import { getEvent, getEvents } from '../@utils/saga';
+import type { PathType } from '../shared-types';
 import type { createBookingRepo, createClinicalRepo, createEconomicsRepo } from './infra';
 
 export function createService(
@@ -7,7 +8,33 @@ export function createService(
   bookingRepo: ReturnType<typeof createBookingRepo>,
 ) {
   return {
-    async scheduleSession(params: { patientId: string; startAt: Date }): Promise<{ sessionId: string }> {
+    async startPath(params: {
+      patientId: string;
+      pathType: PathType;
+      professionalId: string;
+    }): Promise<{ pathId: string }> {
+      const clinical = clinicalRepo.getById(params.patientId);
+
+      const clinicalEvents = clinical.run({
+        data: { pathType: params.pathType },
+        type: 'START_PATH',
+      });
+      const pathStartedEvent = getEvent(clinicalEvents, 'PATH_STARTED');
+      clinical.run({
+        data: { professionalId: params.professionalId, pathId: pathStartedEvent.data.id },
+        type: 'ADD_PROFESSIONAL',
+      });
+
+      clinicalRepo.save(clinical);
+
+      return { pathId: pathStartedEvent.data.id };
+    },
+
+    async scheduleSession(params: {
+      patientId: string;
+      startAt: Date;
+      pathId: string;
+    }): Promise<{ sessionId: string }> {
       const booking = bookingRepo.getById(params.patientId);
       const clinical = clinicalRepo.getById(params.patientId);
       const economics = economicsRepo.getById(params.patientId);
@@ -19,7 +46,7 @@ export function createService(
       const eventScheduledEvent = getEvent(bookingEvents, 'EVENT_SCHEDULED');
 
       const clinicalEvents = clinical.run({
-        data: { id: eventScheduledEvent.data.id, startAt: eventScheduledEvent.data.startAt },
+        data: { id: eventScheduledEvent.data.id, startAt: eventScheduledEvent.data.startAt, pathId: params.pathId },
         type: 'ADMIT_SESSION',
       });
       const sessionClassifiedEvents = getEvents(clinicalEvents, 'SESSION_CLASSIFIED');
@@ -109,7 +136,10 @@ export function createService(
       const economics = economicsRepo.getById(patientId);
 
       const event = booking.getState().events.find((a) => a.id === sessionId);
-      const session = clinical.getState().sessions.find((s) => s.id === sessionId);
+      const session = clinical
+        .getState()
+        .paths.flatMap((p) => p.sessions)
+        .find((s) => s.id === sessionId);
       const price = economics.getState().prices.find((s) => s.id === sessionId);
       if (!event || !session || !price) throw new Error('Session not found');
       return { event, session, price };

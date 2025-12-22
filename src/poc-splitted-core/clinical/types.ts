@@ -1,13 +1,20 @@
 import type { Decider } from '../../@utils/decider';
+import type { PathType } from '../../shared-types';
 
 export interface State {
   id: string;
-  sessions: { id: string; number: number; startAt: Date; revokedAt?: Date }[];
+  paths: {
+    id: string;
+    type: PathType;
+    startedAt: Date;
+    professionals: { id: string; addedAt: Date }[];
+    sessions: { id: string; number: number; startAt: Date; revokedAt?: Date }[];
+  }[];
 }
 
 interface AdmitSessionCmd {
   type: 'ADMIT_SESSION';
-  data: { id: string; startAt: Date };
+  data: { id: string; startAt: Date; pathId: string };
 }
 
 interface ReassessSessionCmd {
@@ -20,23 +27,48 @@ interface RevokeSessionCmd {
   data: { id: string };
 }
 
-export type Command = AdmitSessionCmd | ReassessSessionCmd | RevokeSessionCmd;
+interface AddProfessionalCmd {
+  type: 'ADD_PROFESSIONAL';
+  data: { pathId: string; professionalId: string };
+}
+
+interface StartPathCmd {
+  type: 'START_PATH';
+  data: { pathType: PathType };
+}
+
+export type Command = AdmitSessionCmd | ReassessSessionCmd | RevokeSessionCmd | AddProfessionalCmd | StartPathCmd;
 
 interface SessionAdmittedEvent {
   type: 'SESSION_ADMITTED';
-  data: { id: string; startAt: Date };
+  data: { id: string; startAt: Date; pathId: string };
 }
 
 interface SessionClassifiedEvent {
   type: 'SESSION_CLASSIFIED';
-  data: { id: string; number: number; startAt: Date };
+  data: { id: string; number: number; startAt: Date; pathId: string };
 }
 
 interface SessionRevokedEvent {
   type: 'SESSION_REVOKED';
-  data: { id: string; revokedAt: Date };
+  data: { id: string; revokedAt: Date; pathId: string };
 }
 
-export type Event = SessionAdmittedEvent | SessionClassifiedEvent | SessionRevokedEvent;
+interface ProfessionalAddedEvent {
+  type: 'PROFESSIONAL_ADDED';
+  data: { pathId: string; professionalId: string; addedAt: Date };
+}
+
+interface PathStartedEvent {
+  type: 'PATH_STARTED';
+  data: { id: string; pathType: PathType; startedAt: Date };
+}
+
+export type Event =
+  | SessionAdmittedEvent
+  | SessionClassifiedEvent
+  | SessionRevokedEvent
+  | ProfessionalAddedEvent
+  | PathStartedEvent;
 
 export type ClinicalDecider = Decider<State, Command, Event>;

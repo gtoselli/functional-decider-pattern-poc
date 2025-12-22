@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { createBookingRepo, createClinicalRepo, createEconomicsRepo } from './infra';
 import { createService } from './service';
 
@@ -10,15 +10,42 @@ describe('service', () => {
   const service = createService(economicsRepo, clinicalRepo, bookingRepo);
 
   let patientId: string;
+  let professionalId: string;
   beforeEach(() => {
     patientId = randomUUID();
+    professionalId = randomUUID();
+  });
+
+  describe('startPath', () => {
+    it('should start path', async () => {
+      const res = await service.startPath({ patientId, pathType: 'wlm', professionalId });
+
+      expect(clinicalRepo.getById(patientId).getState()).toEqual({
+        id: patientId,
+        paths: [
+          {
+            id: res.pathId,
+            professionals: [{ id: professionalId, addedAt: expect.any(Date) }],
+            sessions: [],
+            startedAt: expect.any(Date),
+            type: 'wlm',
+          },
+        ],
+      });
+    });
   });
 
   describe('scheduleSession', () => {
+    let pathId: string;
     const startAt = new Date('2026-01-01');
 
+    beforeEach(async () => {
+      const res = await service.startPath({ patientId, pathType: 'wlm', professionalId });
+      pathId = res.pathId;
+    });
+
     it('should create session', async () => {
-      const res = await service.scheduleSession({ patientId, startAt });
+      const res = await service.scheduleSession({ patientId, startAt, pathId });
 
       const session = await service.getSession(patientId, res.sessionId);
       expect(session).toEqual({
@@ -47,7 +74,8 @@ describe('service', () => {
     const startAt = new Date('2025-12-31');
 
     beforeEach(async () => {
-      const res = await service.scheduleSession({ patientId, startAt: new Date('2026-01-01') });
+      const pathRes = await service.startPath({ patientId, pathType: 'wlm', professionalId });
+      const res = await service.scheduleSession({ patientId, startAt: new Date('2026-01-01'), pathId: pathRes.pathId });
       sessionId = res.sessionId;
     });
 
@@ -79,7 +107,8 @@ describe('service', () => {
   describe('cancelSession', () => {
     let sessionId: string;
     beforeEach(async () => {
-      const res = await service.scheduleSession({ patientId, startAt: new Date('2026-01-01') });
+      const pathRes = await service.startPath({ patientId, pathType: 'wlm', professionalId });
+      const res = await service.scheduleSession({ patientId, startAt: new Date('2026-01-01'), pathId: pathRes.pathId });
       sessionId = res.sessionId;
     });
 
