@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createBookingRepo, createClinicalRepo, createEconomicsRepo } from './infra';
+import { createBookingInMemRepo, createClinicalInMemRepo, createEconomicsInMemRepo } from './infra';
 import { createService } from './service';
 
 describe('service', () => {
-  const clinicalRepo = createClinicalRepo();
-  const economicsRepo = createEconomicsRepo();
-  const bookingRepo = createBookingRepo();
+  const clinicalRepo = createClinicalInMemRepo();
+  const economicsRepo = createEconomicsInMemRepo();
+  const bookingRepo = createBookingInMemRepo();
   const service = createService(economicsRepo, clinicalRepo, bookingRepo);
 
   let patientId: string;
@@ -37,16 +37,41 @@ describe('service', () => {
 
   describe('scheduleSession', () => {
     let pathId: string;
+    let sessionId: string;
     const startAt = new Date('2026-01-01');
 
     beforeEach(async () => {
-      const res = await service.startPath({ patientId, pathType: 'wlm', professionalId });
-      pathId = res.pathId;
+      const pathRes = await service.startPath({ patientId, pathType: 'wlm', professionalId });
+      pathId = pathRes.pathId;
+
+      const res = await service.scheduleSession({ patientId, startAt, pathId });
+      sessionId = res.sessionId;
+    });
+
+    it('should schedule event in booking context', async () => {
+      expect(await service.getEvent(patientId, sessionId)).toMatchObject({ id: sessionId, startAt });
+    });
+
+    it('should admit and classify session in clinical context', async () => {
+      expect(await service.getPath(patientId, pathId)).toMatchObject({
+        sessions: [
+          {
+            id: sessionId,
+            startAt: expect.any(Date),
+            number: 1,
+            revokedAt: null,
+          },
+        ],
+      });
+    });
+
+    it('should quote price in economics context', async () => {
+      expect(economicsRepo.getById(patientId).getState()).toMatchObject({
+        prices: [{ id: sessionId, status: 'quoted', cost: 0, reason: 'first_session' }],
+      });
     });
 
     it('should create session', async () => {
-      const { sessionId } = await service.scheduleSession({ patientId, startAt, pathId });
-
       const session = await service.getSession(patientId, sessionId);
       expect(session).toEqual({
         event: {
@@ -71,37 +96,38 @@ describe('service', () => {
   });
 
   describe('rescheduleSession', () => {
+    let pathId: string;
     let sessionId: string;
-    const startAt = new Date('2025-12-31');
+    const startAt = new Date('2026-01-04');
 
     beforeEach(async () => {
-      const { pathId } = await service.startPath({ patientId, pathType: 'wlm', professionalId });
+      const pathRes = await service.startPath({ patientId, pathType: 'wlm', professionalId });
+      pathId = pathRes.pathId;
       const res = await service.scheduleSession({ patientId, startAt: new Date('2026-01-01'), pathId: pathId });
       sessionId = res.sessionId;
+      await service.scheduleSession({ patientId, startAt: new Date('2026-01-02'), pathId });
+      await service.scheduleSession({ patientId, startAt: new Date('2026-01-03'), pathId });
+
+      await service.rescheduleSession({ sessionId, patientId, startAt });
     });
 
-    it('should reschedule session', async () => {
-      await service.rescheduleSession({ sessionId, patientId, startAt });
+    it('should reschedule event in booking context', async () => {
+      expect(await service.getEvent(patientId, sessionId)).toMatchObject({ startAt });
+    });
 
-      const session = await service.getSession(patientId, sessionId);
-      expect(session).toEqual({
-        event: {
-          id: expect.any(String),
-          startAt,
-          cancelledAt: null,
-        },
-        session: {
-          id: expect.any(String),
-          startAt,
-          number: 1,
-          revokedAt: null,
-        },
-        price: {
-          id: expect.any(String),
-          cost: 0,
-          reason: 'first_session',
-          status: 'quoted',
-        },
+    it('should re classify path sessions in clinical context', async () => {
+      expect(await service.getPath(patientId, pathId)).toMatchObject({
+        sessions: [{ id: sessionId, number: 3 }, { number: 1 }, { number: 2 }],
+      });
+    });
+
+    it('should re quote other prices in economics context', async () => {
+      expect(economicsRepo.getById(patientId).getState()).toMatchObject({
+        prices: [
+          { id: sessionId, status: 'quoted', cost: 4500 },
+          { status: 'quoted', cost: 0 },
+          { status: 'quoted', cost: 4500 },
+        ],
       });
     });
   });
@@ -132,7 +158,7 @@ describe('service', () => {
       });
     });
 
-    it('should reassess path sequence in clinical context', async () => {
+    it('should re classify path sessions in clinical context', async () => {
       expect(await service.getPath(patientId, pathId)).toMatchObject({
         sessions: [{ id: sessionId, number: 1 }, { number: 1 }, { number: 2 }],
       });

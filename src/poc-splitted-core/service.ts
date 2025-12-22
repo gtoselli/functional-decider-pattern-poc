@@ -1,11 +1,11 @@
 import { getEvent, getEvents } from '../@utils/saga';
 import type { PathType } from '../shared-types';
-import type { createBookingRepo, createClinicalRepo, createEconomicsRepo } from './infra';
+import type { createBookingInMemRepo, createClinicalInMemRepo, createEconomicsInMemRepo } from './infra';
 
 export function createService(
-  economicsRepo: ReturnType<typeof createEconomicsRepo>,
-  clinicalRepo: ReturnType<typeof createClinicalRepo>,
-  bookingRepo: ReturnType<typeof createBookingRepo>,
+  economicsRepo: ReturnType<typeof createEconomicsInMemRepo>,
+  clinicalRepo: ReturnType<typeof createClinicalInMemRepo>,
+  bookingRepo: ReturnType<typeof createBookingInMemRepo>,
 ) {
   return {
     async startPath(params: {
@@ -127,7 +127,6 @@ export function createService(
       clinicalRepo.save(clinical);
       economicsRepo.save(economics);
     },
-    // async startPath(params: { patientId: string; pathType: PathType }): Promise<{ pathId: string }> {},
     // async cancelPath(params: { patientId: string; pathId: string }): Promise<void> {},
 
     async getSession(patientId: string, sessionId: string) {

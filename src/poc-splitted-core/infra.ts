@@ -10,7 +10,7 @@ type BookingAggregate = Aggregate<BookingDecider>;
 type ClinicalAggregate = Aggregate<ClinicalDecider>;
 type EconomicsAggregate = Aggregate<EconomicsDecider>;
 
-export function createBookingRepo() {
+export function createBookingInMemRepo() {
   const STATE: Record<string, ReturnType<BookingAggregate['getState']>> = {};
 
   return {
@@ -23,7 +23,7 @@ export function createBookingRepo() {
   };
 }
 
-export function createClinicalRepo() {
+export function createClinicalInMemRepo() {
   const STATE: Record<string, ReturnType<ClinicalAggregate['getState']>> = {};
 
   return {
@@ -36,7 +36,7 @@ export function createClinicalRepo() {
   };
 }
 
-export function createEconomicsRepo() {
+export function createEconomicsInMemRepo() {
   const STATE: Record<string, ReturnType<EconomicsAggregate['getState']>> = {};
 
   return {
