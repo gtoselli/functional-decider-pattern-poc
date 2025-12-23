@@ -12,8 +12,8 @@ describe('patientEconomicsDecider', () => {
     aggregate.resetToInitialState();
   });
 
-  it('quote service', () => {
-    const events = aggregate.run({ type: 'QUOTE_SERVICE', data: { sessionId: 's1', number: 1 } });
+  it('price session', () => {
+    const events = aggregate.run({ type: 'PRICE_SESSION', data: { sessionId: 's1', number: 1 } });
 
     expect(events).toEqual([
       {
@@ -22,15 +22,15 @@ describe('patientEconomicsDecider', () => {
           reason: 'first_session',
           id: 's1',
         },
-        type: 'SERVICE_QUOTED',
+        type: 'SESSION_PRICED',
       },
     ]);
     expect(aggregate.getState()).toEqual({ id });
   });
 
-  it('quote service: another price', () => {
-    aggregate.run({ type: 'QUOTE_SERVICE', data: { sessionId: 's1', number: 1 } });
-    const events = aggregate.run({ type: 'QUOTE_SERVICE', data: { sessionId: 's2', number: 2 } });
+  it('price session: another price', () => {
+    aggregate.run({ type: 'PRICE_SESSION', data: { sessionId: 's1', number: 1 } });
+    const events = aggregate.run({ type: 'PRICE_SESSION', data: { sessionId: 's2', number: 2 } });
 
     expect(events).toEqual([
       {
@@ -39,7 +39,7 @@ describe('patientEconomicsDecider', () => {
           reason: 'standard',
           id: 's2',
         },
-        type: 'SERVICE_QUOTED',
+        type: 'SESSION_PRICED',
       },
     ]);
     expect(aggregate.getState()).toEqual({ id });

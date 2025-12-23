@@ -4,28 +4,28 @@ export interface State {
   id: string;
 }
 
-interface QuoteServiceCmd {
-  type: 'QUOTE_SERVICE';
+interface PriceSessionCmd {
+  type: 'PRICE_SESSION';
   data: { sessionId: string; number: number };
 }
 
-interface ReleaseQuoteCmd {
-  type: 'RELEASE_QUOTE';
+interface VoidSessionPriceCmd {
+  type: 'VOID_SESSION_PRICE';
   data: { sessionId: string };
 }
 
-export type Command = QuoteServiceCmd | ReleaseQuoteCmd;
+export type Command = PriceSessionCmd | VoidSessionPriceCmd;
 
-interface ServiceQuotedEvent {
-  type: 'SERVICE_QUOTED';
+interface SessionPricedEvent {
+  type: 'SESSION_PRICED';
   data: { id: string; cost: number; reason: 'first_session' | 'standard' };
 }
 
-interface QuoteReleasedEvent {
-  type: 'QUOTE_RELEASED';
+interface SessionPriceVoidedEvent {
+  type: 'SESSION_PRICE_VOIDED';
   data: { id: string };
 }
 
-export type Event = ServiceQuotedEvent | QuoteReleasedEvent;
+export type Event = SessionPricedEvent | SessionPriceVoidedEvent;
 
 export type EconomicsDecider = Decider<State, Command, Event>;

@@ -11,17 +11,17 @@ export function createEconomicsService(
       const sessionOrder = sessionOrderRepo.getById(params.sessionId);
 
       const patientEconomicsEvents = patientEconomics.run({
-        type: 'QUOTE_SERVICE',
+        type: 'PRICE_SESSION',
         data: { sessionId: params.sessionId, number: params.sessionNumber },
       });
-      const serviceQuotedEvent = getEvent(patientEconomicsEvents, 'SERVICE_QUOTED');
+      const sessionPricedEvent = getEvent(patientEconomicsEvents, 'SESSION_PRICED');
 
       const sessionOrderEvents = sessionOrder.run({
         type: 'PLACE_SESSION_ORDER',
         data: {
           patientId: params.patientId,
-          cost: serviceQuotedEvent.data.cost,
-          reason: serviceQuotedEvent.data.reason,
+          cost: sessionPricedEvent.data.cost,
+          reason: sessionPricedEvent.data.reason,
         },
       });
 
@@ -35,7 +35,7 @@ export function createEconomicsService(
       const sessionOrder = sessionOrderRepo.getById(params.sessionId);
 
       const patientEconomicsEvents = patientEconomics.run({
-        type: 'RELEASE_QUOTE',
+        type: 'VOID_SESSION_PRICE',
         data: { sessionId: params.sessionId },
       });
 

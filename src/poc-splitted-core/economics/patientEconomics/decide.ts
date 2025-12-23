@@ -1,16 +1,16 @@
 import type { Command, Event, State } from './types';
 
-export function decide(cmd: Command, _state: State) {
+export function decide(cmd: Command, _state: State): Event[] {
   switch (cmd.type) {
-    case 'QUOTE_SERVICE': {
+    case 'PRICE_SESSION': {
       const cost = cmd.data.number === 1 ? 0 : 4500;
       const reason = cmd.data.number === 1 ? ('first_session' as const) : ('standard' as const);
 
-      return [{ data: { id: cmd.data.sessionId, cost: cost, reason }, type: 'SERVICE_QUOTED' }] satisfies Event[];
+      return [{ data: { id: cmd.data.sessionId, cost: cost, reason }, type: 'SESSION_PRICED' }];
     }
 
-    case 'RELEASE_QUOTE': {
-      return [{ data: { id: cmd.data.sessionId }, type: 'QUOTE_RELEASED' }] satisfies Event[];
+    case 'VOID_SESSION_PRICE': {
+      return [{ data: { id: cmd.data.sessionId }, type: 'SESSION_PRICE_VOIDED' }];
     }
     default: {
       const _exhaustive: never = cmd;
