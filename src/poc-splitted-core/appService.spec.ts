@@ -8,12 +8,12 @@ import {
   createBookingInMemRepo,
   createClinicalInMemRepo,
   createPatientEconomicsInMemRepo,
-  createSessionQuoteInMemRepo,
+  createSessionOrderInMemRepo,
 } from './infra';
 
 describe('appService', () => {
   const clinicalService = createClinicalService(createClinicalInMemRepo());
-  const economicsService = createEconomicsService(createSessionQuoteInMemRepo(), createPatientEconomicsInMemRepo());
+  const economicsService = createEconomicsService(createSessionOrderInMemRepo(), createPatientEconomicsInMemRepo());
   const bookingService = createBookingService(createBookingInMemRepo());
   const service = createAppService(economicsService, clinicalService, bookingService);
 
@@ -74,7 +74,7 @@ describe('appService', () => {
     });
 
     it('should quote price in economics context', async () => {
-      expect(economicsService.getSessionQuote(sessionId)).toMatchObject({
+      expect(economicsService.getSessionOrder(sessionId)).toMatchObject({
         id: sessionId,
         cost: 0,
         reason: 'first_session',
@@ -132,7 +132,7 @@ describe('appService', () => {
     });
 
     it('should re quote other prices in economics context', async () => {
-      expect(economicsService.getSessionQuotes(patientId)).toEqual([
+      expect(economicsService.getSessionOrders(patientId)).toEqual([
         expect.objectContaining({ id: sessionId, cost: 4500, voidedAt: null }),
         expect.objectContaining({ cost: 0, voidedAt: null }),
         expect.objectContaining({ cost: 4500, voidedAt: null }),
@@ -173,11 +173,11 @@ describe('appService', () => {
     });
 
     it('should release quote in economics context', async () => {
-      expect(economicsService.getSessionQuote(sessionId)).toMatchObject({ voidedAt: expect.any(Date) });
+      expect(economicsService.getSessionOrder(sessionId)).toMatchObject({ voidedAt: expect.any(Date) });
     });
 
     it('should re quote other prices in economics context', async () => {
-      expect(economicsService.getSessionQuotes(patientId)).toEqual([
+      expect(economicsService.getSessionOrders(patientId)).toEqual([
         expect.objectContaining({ id: sessionId, cost: 0, voidedAt: expect.any(Date) }),
         expect.objectContaining({ cost: 0 }),
         expect.objectContaining({ cost: 4500 }),

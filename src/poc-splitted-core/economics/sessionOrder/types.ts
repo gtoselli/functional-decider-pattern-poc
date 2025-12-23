@@ -14,27 +14,27 @@ export type State = { id: string } & (
     }
 );
 
-interface PlaceSessionQuoteCmd {
-  type: 'PLACE_SESSION_QUOTE';
+interface PlaceSessionOrderCmd {
+  type: 'PLACE_SESSION_ORDER';
   data: { cost: number; reason: 'first_session' | 'standard'; patientId: string };
 }
 
-interface VoidSessionQuoteCmd {
-  type: 'VOID_SESSION_QUOTE';
+interface VoidSessionOrderCmd {
+  type: 'VOID_SESSION_ORDER';
   data: {};
 }
 
-export type Command = PlaceSessionQuoteCmd | VoidSessionQuoteCmd;
+export type Command = PlaceSessionOrderCmd | VoidSessionOrderCmd;
 
-interface SessionQuotePlacedEvent {
-  type: 'SESSION_QUOTE_PLACED';
+interface SessionOrderPlacedEvent {
+  type: 'SESSION_ORDER_PLACED';
   data: { id: string; patientId: string; placedAt: Date; cost: number; reason: 'first_session' | 'standard' };
 }
 
-interface SessionQuoteVoidedEvent {
-  type: 'SESSION_QUOTE_VOIDED';
+interface SessionOrderVoidedEvent {
+  type: 'SESSION_ORDER_VOIDED';
   data: { voidedAt: Date };
 }
-export type Event = SessionQuotePlacedEvent | SessionQuoteVoidedEvent;
+export type Event = SessionOrderPlacedEvent | SessionOrderVoidedEvent;
 
-export type BillableSessionDecider = Decider<State, Command, Event>;
+export type SessionOrderDecider = Decider<State, Command, Event>;

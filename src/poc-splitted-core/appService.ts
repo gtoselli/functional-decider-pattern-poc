@@ -47,7 +47,7 @@ export function createAppService(
       const sessionClassifiedEvents = getEvents(clinicalEvents, 'SESSION_CLASSIFIED');
 
       sessionClassifiedEvents.flatMap((sessionClassifiedEvent) =>
-        economicsService.placeSessionQuote({
+        economicsService.placeSessionOrder({
           patientId: params.patientId,
           sessionId: sessionClassifiedEvent.data.id,
           sessionNumber: sessionClassifiedEvent.data.number,
@@ -68,7 +68,7 @@ export function createAppService(
       const sessionClassifiedEvents = getEvents(clinicalEvents, 'SESSION_CLASSIFIED');
 
       sessionClassifiedEvents.flatMap((sessionClassifiedEvent) =>
-        economicsService.placeSessionQuote({
+        economicsService.placeSessionOrder({
           patientId: params.patientId,
           sessionId: sessionClassifiedEvent.data.id,
           sessionNumber: sessionClassifiedEvent.data.number,
@@ -86,7 +86,7 @@ export function createAppService(
       const sessionRevokedEvents = getEvents(clinicalEvents, 'SESSION_REVOKED');
 
       sessionClassifiedEvents.flatMap((sessionClassifiedEvent) =>
-        economicsService.placeSessionQuote({
+        economicsService.placeSessionOrder({
           patientId: params.patientId,
           sessionId: sessionClassifiedEvent.data.id,
           sessionNumber: sessionClassifiedEvent.data.number,
@@ -94,7 +94,7 @@ export function createAppService(
       );
 
       sessionRevokedEvents.flatMap((sessionRevokedEvent) =>
-        economicsService.voidSessionQuote({
+        economicsService.voidSessionOrder({
           patientId: params.patientId,
           sessionId: sessionRevokedEvent.data.id,
         }),
@@ -106,7 +106,7 @@ export function createAppService(
       const event = bookingService.getEvent(sessionId);
 
       const session = clinicalService.getSession(patientId, sessionId);
-      const billableSession = economicsService.getSessionQuote(sessionId);
+      const billableSession = economicsService.getSessionOrder(sessionId);
       if (!event || !session || !billableSession) throw new Error('Session not found');
       return { event, session, billableSession };
     },

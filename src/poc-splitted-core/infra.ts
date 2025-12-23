@@ -5,13 +5,13 @@ import { clinicalDecider } from './clinical';
 import type { ClinicalDecider } from './clinical/types';
 import { economicsDecider } from './economics/patientEconomics';
 import type { EconomicsDecider } from './economics/patientEconomics/types';
-import { sessionQuoteDecider } from './economics/sessionQuote';
-import type { BillableSessionDecider, State as SessionQuoteState } from './economics/sessionQuote/types';
+import { sessionOrderDecider } from './economics/sessionOrder';
+import type { SessionOrderDecider, State as SessionOrderState } from './economics/sessionOrder/types';
 
 type BookingAggregate = Aggregate<BookingDecider>;
 type ClinicalAggregate = Aggregate<ClinicalDecider>;
 type EconomicsAggregate = Aggregate<EconomicsDecider>;
-type BillableSessionAggregate = Aggregate<BillableSessionDecider>;
+type BillableSessionAggregate = Aggregate<SessionOrderDecider>;
 
 export function createBookingInMemRepo() {
   const STATE = new Map<string, BookingState>();
@@ -27,8 +27,8 @@ export function createBookingInMemRepo() {
   };
 }
 
-export function createSessionQuoteInMemRepo() {
-  const STATE = new Map<string, SessionQuoteState>();
+export function createSessionOrderInMemRepo() {
+  const STATE = new Map<string, SessionOrderState>();
 
   return {
     save(aggregate: BillableSessionAggregate) {
@@ -36,7 +36,7 @@ export function createSessionQuoteInMemRepo() {
     },
     getById(id: string) {
       const state = STATE.get(id);
-      return createDeciderAggregate(sessionQuoteDecider, state || { id, status: 'initial' as const });
+      return createDeciderAggregate(sessionOrderDecider, state || { id, status: 'initial' as const });
     },
 
     getAll(patientId: string) {

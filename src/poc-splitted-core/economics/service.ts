@@ -1,14 +1,14 @@
 import { getEvent } from '../../@utils/saga';
-import type { createPatientEconomicsInMemRepo, createSessionQuoteInMemRepo } from '../infra';
+import type { createPatientEconomicsInMemRepo, createSessionOrderInMemRepo } from '../infra';
 
 export function createEconomicsService(
-  sessionQuoteRepo: ReturnType<typeof createSessionQuoteInMemRepo>,
+  sessionOrderRepo: ReturnType<typeof createSessionOrderInMemRepo>,
   patientEconomicsRepo: ReturnType<typeof createPatientEconomicsInMemRepo>,
 ) {
   return {
-    placeSessionQuote(params: { patientId: string; sessionId: string; sessionNumber: number }) {
+    placeSessionOrder(params: { patientId: string; sessionId: string; sessionNumber: number }) {
       const patientEconomics = patientEconomicsRepo.getById(params.patientId);
-      const sessionQuote = sessionQuoteRepo.getById(params.sessionId);
+      const sessionOrder = sessionOrderRepo.getById(params.sessionId);
 
       const patientEconomicsEvents = patientEconomics.run({
         type: 'QUOTE_SERVICE',
@@ -16,8 +16,8 @@ export function createEconomicsService(
       });
       const serviceQuotedEvent = getEvent(patientEconomicsEvents, 'SERVICE_QUOTED');
 
-      const sessionQuoteEvents = sessionQuote.run({
-        type: 'PLACE_SESSION_QUOTE',
+      const sessionOrderEvents = sessionOrder.run({
+        type: 'PLACE_SESSION_ORDER',
         data: {
           patientId: params.patientId,
           cost: serviceQuotedEvent.data.cost,
@@ -26,35 +26,35 @@ export function createEconomicsService(
       });
 
       patientEconomicsRepo.save(patientEconomics);
-      sessionQuoteRepo.save(sessionQuote);
-      return [...patientEconomicsEvents, ...sessionQuoteEvents];
+      sessionOrderRepo.save(sessionOrder);
+      return [...patientEconomicsEvents, ...sessionOrderEvents];
     },
 
-    voidSessionQuote(params: { patientId: string; sessionId: string }) {
+    voidSessionOrder(params: { patientId: string; sessionId: string }) {
       const patientEconomics = patientEconomicsRepo.getById(params.patientId);
-      const sessionQuote = sessionQuoteRepo.getById(params.sessionId);
+      const sessionOrder = sessionOrderRepo.getById(params.sessionId);
 
       const patientEconomicsEvents = patientEconomics.run({
         type: 'RELEASE_QUOTE',
         data: { sessionId: params.sessionId },
       });
 
-      const sessionQuoteEvents = sessionQuote.run({
-        type: 'VOID_SESSION_QUOTE',
+      const sessionOrderEvents = sessionOrder.run({
+        type: 'VOID_SESSION_ORDER',
         data: {},
       });
 
       patientEconomicsRepo.save(patientEconomics);
-      sessionQuoteRepo.save(sessionQuote);
-      return [...patientEconomicsEvents, ...sessionQuoteEvents];
+      sessionOrderRepo.save(sessionOrder);
+      return [...patientEconomicsEvents, ...sessionOrderEvents];
     },
 
-    getSessionQuote(sessionId: string) {
-      return sessionQuoteRepo.getById(sessionId).getState();
+    getSessionOrder(sessionId: string) {
+      return sessionOrderRepo.getById(sessionId).getState();
     },
 
-    getSessionQuotes(patientId: string) {
-      return sessionQuoteRepo.getAll(patientId);
+    getSessionOrders(patientId: string) {
+      return sessionOrderRepo.getAll(patientId);
     },
   };
 }

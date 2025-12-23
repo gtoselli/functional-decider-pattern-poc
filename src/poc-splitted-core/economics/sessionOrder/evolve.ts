@@ -2,7 +2,7 @@ import type { Event, State } from './types';
 
 export function evolve(state: State, event: Event): State {
   switch (event.type) {
-    case 'SESSION_QUOTE_PLACED': {
+    case 'SESSION_ORDER_PLACED': {
       return {
         id: event.data.id,
         status: 'quoted',
@@ -13,7 +13,7 @@ export function evolve(state: State, event: Event): State {
         cost: event.data.cost,
       };
     }
-    case 'SESSION_QUOTE_VOIDED': {
+    case 'SESSION_ORDER_VOIDED': {
       if (state.status !== 'quoted') return state;
       return {
         ...state,
