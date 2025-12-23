@@ -1,4 +1,4 @@
-import type { Decider } from '../../@utils/decider';
+import type { Decider } from '../../../@utils/decider';
 
 export interface State {
   id: string;

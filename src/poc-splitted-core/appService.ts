@@ -1,14 +1,13 @@
 import { getEvent, getEvents } from '../@utils/saga';
 import type { PathType } from '../shared-types';
 import type { createBookingService } from './booking/service';
-import type { createClinicalInMemRepo, createEconomicsInMemRepo } from './infra';
-import type { createSessionEconomicsService } from './sessionQuote/service';
+import type { createEconomicsService } from './economics/service';
+import type { createClinicalInMemRepo } from './infra';
 
-export function createService(
-  economicsRepo: ReturnType<typeof createEconomicsInMemRepo>,
+export function createAppService(
+  economicsService: ReturnType<typeof createEconomicsService>,
   clinicalRepo: ReturnType<typeof createClinicalInMemRepo>,
   bookingService: ReturnType<typeof createBookingService>,
-  billableSessionService: ReturnType<typeof createSessionEconomicsService>,
 ) {
   return {
     async startPath(params: {
@@ -39,7 +38,6 @@ export function createService(
       pathId: string;
     }): Promise<{ sessionId: string }> {
       const clinical = clinicalRepo.getById(params.patientId);
-      const economics = economicsRepo.getById(params.patientId);
 
       const bookingEvents = bookingService.scheduleEvent({
         patientId: params.patientId,
@@ -53,31 +51,20 @@ export function createService(
       });
       const sessionClassifiedEvents = getEvents(clinicalEvents, 'SESSION_CLASSIFIED');
 
-      const economicsEvents = sessionClassifiedEvents.flatMap((sessionClassifiedEvent) =>
-        economics.run({
-          data: { sessionId: sessionClassifiedEvent.data.id, number: sessionClassifiedEvent.data.number },
-          type: 'QUOTE_SERVICE',
+      sessionClassifiedEvents.flatMap((sessionClassifiedEvent) =>
+        economicsService.placeSessionQuote({
+          patientId: params.patientId,
+          sessionId: sessionClassifiedEvent.data.id,
+          sessionNumber: sessionClassifiedEvent.data.number,
         }),
       );
-      const serviceQuotedEvents = getEvents(economicsEvents, 'SERVICE_QUOTED');
-
-      serviceQuotedEvents.forEach((economicEvents) => {
-        billableSessionService.place({
-          sessionId: economicEvents.data.id,
-          patientId: params.patientId,
-          cost: economicEvents.data.cost,
-          reason: economicEvents.data.reason,
-        });
-      });
 
       clinicalRepo.save(clinical);
-      economicsRepo.save(economics);
 
       return { sessionId: eventScheduledEvent.data.id };
     },
     async rescheduleSession(params: { patientId: string; sessionId: string; startAt: Date }): Promise<void> {
       const clinical = clinicalRepo.getById(params.patientId);
-      const economics = economicsRepo.getById(params.patientId);
 
       const bookingEvents = bookingService.rescheduleEvent({ eventId: params.sessionId, startAt: params.startAt });
       const eventRescheduledEvent = getEvent(bookingEvents, 'EVENT_RESCHEDULED');
@@ -88,29 +75,18 @@ export function createService(
       });
       const sessionClassifiedEvents = getEvents(clinicalEvents, 'SESSION_CLASSIFIED');
 
-      const economicsEvents = sessionClassifiedEvents.flatMap((sessionClassifiedEvent) =>
-        economics.run({
-          data: { sessionId: sessionClassifiedEvent.data.id, number: sessionClassifiedEvent.data.number },
-          type: 'QUOTE_SERVICE',
+      sessionClassifiedEvents.flatMap((sessionClassifiedEvent) =>
+        economicsService.placeSessionQuote({
+          patientId: params.patientId,
+          sessionId: sessionClassifiedEvent.data.id,
+          sessionNumber: sessionClassifiedEvent.data.number,
         }),
       );
-      const serviceQuotedEvents = getEvents(economicsEvents, 'SERVICE_QUOTED');
-
-      serviceQuotedEvents.forEach((economicEvents) => {
-        billableSessionService.place({
-          sessionId: economicEvents.data.id,
-          patientId: params.patientId,
-          cost: economicEvents.data.cost,
-          reason: economicEvents.data.reason,
-        });
-      });
 
       clinicalRepo.save(clinical);
-      economicsRepo.save(economics);
     },
     async cancelSession(params: { patientId: string; sessionId: string }): Promise<void> {
       const clinical = clinicalRepo.getById(params.patientId);
-      const economics = economicsRepo.getById(params.patientId);
 
       bookingService.cancelEvent({ eventId: params.sessionId });
 
@@ -121,37 +97,22 @@ export function createService(
       const sessionClassifiedEvents = getEvents(clinicalEvents, 'SESSION_CLASSIFIED');
       const sessionRevokedEvents = getEvents(clinicalEvents, 'SESSION_REVOKED');
 
-      const economicsEvents = sessionClassifiedEvents.flatMap((sessionClassifiedEvent) =>
-        economics.run({
-          data: { sessionId: sessionClassifiedEvent.data.id, number: sessionClassifiedEvent.data.number },
-          type: 'QUOTE_SERVICE',
-        }),
-      );
-      const serviceQuotedEvents = getEvents(economicsEvents, 'SERVICE_QUOTED');
-      serviceQuotedEvents.forEach((serviceQuoted) => {
-        billableSessionService.place({
-          sessionId: serviceQuoted.data.id,
-          cost: serviceQuoted.data.cost,
+      sessionClassifiedEvents.flatMap((sessionClassifiedEvent) =>
+        economicsService.placeSessionQuote({
           patientId: params.patientId,
-          reason: serviceQuoted.data.reason,
-        });
-      });
-
-      const economicsEvents2 = sessionRevokedEvents.flatMap((sessionRevokedEvent) =>
-        economics.run({
-          data: { sessionId: sessionRevokedEvent.data.id },
-          type: 'RELEASE_QUOTE',
+          sessionId: sessionClassifiedEvent.data.id,
+          sessionNumber: sessionClassifiedEvent.data.number,
         }),
       );
-      const quoteReleasedEvents = getEvents(economicsEvents2, 'QUOTE_RELEASED');
-      quoteReleasedEvents.forEach((quoteReleased) => {
-        billableSessionService.void({
-          sessionId: quoteReleased.data.id,
-        });
-      });
+
+      sessionRevokedEvents.flatMap((sessionRevokedEvent) =>
+        economicsService.voidSessionQuote({
+          patientId: params.patientId,
+          sessionId: sessionRevokedEvent.data.id,
+        }),
+      );
 
       clinicalRepo.save(clinical);
-      economicsRepo.save(economics);
     },
     // async cancelPath(params: { patientId: string; pathId: string }): Promise<void> {},
 
@@ -163,7 +124,7 @@ export function createService(
         .getState()
         .paths.flatMap((p) => p.sessions)
         .find((s) => s.id === sessionId);
-      const billableSession = billableSessionService.getBillingSession(sessionId);
+      const billableSession = economicsService.getSessionQuote(sessionId);
       if (!event || !session || !billableSession) throw new Error('Session not found');
       return { event, session, billableSession };
     },

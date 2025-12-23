@@ -1,21 +1,20 @@
 import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { createAppService } from './appService';
 import { createBookingService } from './booking/service';
+import { createEconomicsService } from './economics/service';
 import {
   createBookingInMemRepo,
   createClinicalInMemRepo,
-  createEconomicsInMemRepo,
-  createSessionEconomicsInMemRepo,
+  createPatientEconomicsInMemRepo,
+  createSessionQuoteInMemRepo,
 } from './infra';
-import { createService } from './service';
-import { createSessionEconomicsService } from './sessionQuote/service';
 
-describe('service', () => {
+describe('appService', () => {
   const clinicalRepo = createClinicalInMemRepo();
-  const economicsRepo = createEconomicsInMemRepo();
+  const economicsService = createEconomicsService(createSessionQuoteInMemRepo(), createPatientEconomicsInMemRepo());
   const bookingService = createBookingService(createBookingInMemRepo());
-  const billableSessionService = createSessionEconomicsService(createSessionEconomicsInMemRepo());
-  const service = createService(economicsRepo, clinicalRepo, bookingService, billableSessionService);
+  const service = createAppService(economicsService, clinicalRepo, bookingService);
 
   let patientId: string;
   let professionalId: string;
@@ -74,7 +73,7 @@ describe('service', () => {
     });
 
     it('should quote price in economics context', async () => {
-      expect(billableSessionService.getBillingSession(sessionId)).toMatchObject({
+      expect(economicsService.getSessionQuote(sessionId)).toMatchObject({
         id: sessionId,
         cost: 0,
         reason: 'first_session',
@@ -132,10 +131,10 @@ describe('service', () => {
     });
 
     it('should re quote other prices in economics context', async () => {
-      expect(billableSessionService.getBillingSessions(patientId)).toEqual([
-        expect.objectContaining({ id: sessionId, cost: 4500, releasedAt: null }),
-        expect.objectContaining({ cost: 0, releasedAt: null }),
-        expect.objectContaining({ cost: 4500, releasedAt: null }),
+      expect(economicsService.getSessionQuotes(patientId)).toEqual([
+        expect.objectContaining({ id: sessionId, cost: 4500, voidedAt: null }),
+        expect.objectContaining({ cost: 0, voidedAt: null }),
+        expect.objectContaining({ cost: 4500, voidedAt: null }),
       ]);
     });
   });
@@ -173,12 +172,12 @@ describe('service', () => {
     });
 
     it('should release quote in economics context', async () => {
-      expect(billableSessionService.getBillingSession(sessionId)).toMatchObject({ releasedAt: expect.any(Date) });
+      expect(economicsService.getSessionQuote(sessionId)).toMatchObject({ voidedAt: expect.any(Date) });
     });
 
     it('should re quote other prices in economics context', async () => {
-      expect(billableSessionService.getBillingSessions(patientId)).toEqual([
-        expect.objectContaining({ id: sessionId, cost: 0, releasedAt: expect.any(Date) }),
+      expect(economicsService.getSessionQuotes(patientId)).toEqual([
+        expect.objectContaining({ id: sessionId, cost: 0, voidedAt: expect.any(Date) }),
         expect.objectContaining({ cost: 0 }),
         expect.objectContaining({ cost: 4500 }),
       ]);

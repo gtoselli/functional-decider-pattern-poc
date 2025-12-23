@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createDeciderAggregate } from '../../@utils/decider';
+import { createDeciderAggregate } from '../../../@utils/decider';
 import { sessionQuoteDecider } from './index';
 import type { State } from './types';
 
@@ -25,7 +25,7 @@ describe('sessionQuoteDecider', () => {
           cost: 4500,
           id,
           patientId,
-          pricedAt: expect.any(Date),
+          placedAt: expect.any(Date),
           reason: 'standard',
         },
         type: 'SESSION_QUOTE_PLACED',
@@ -35,43 +35,9 @@ describe('sessionQuoteDecider', () => {
       cost: 4500,
       id,
       patientId,
-      pricedAt: expect.any(Date),
+      placedAt: expect.any(Date),
       reason: 'standard',
-      releasedAt: null,
-      repricedAt: null,
-      status: 'quoted',
-    });
-  });
-
-  it('replace', () => {
-    aggregate.run({
-      type: 'PLACE_SESSION_QUOTE',
-      data: { cost: 4500, reason: 'standard', patientId },
-    });
-
-    const events = aggregate.run({
-      type: 'REPLACE_SESSION_QUOTE',
-      data: { cost: 5000, reason: 'standard' },
-    });
-
-    expect(events).toEqual([
-      {
-        data: {
-          cost: 5000,
-          repricedAt: expect.any(Date),
-          reason: 'standard',
-        },
-        type: 'SESSION_QUOTE_REPLACED',
-      },
-    ]);
-    expect(aggregate.getState()).toEqual({
-      cost: 5000,
-      id,
-      patientId,
-      pricedAt: expect.any(Date),
-      reason: 'standard',
-      releasedAt: null,
-      repricedAt: expect.any(Date),
+      voidedAt: null,
       status: 'quoted',
     });
   });
@@ -90,7 +56,7 @@ describe('sessionQuoteDecider', () => {
     expect(events).toEqual([
       {
         data: {
-          releasedAt: expect.any(Date),
+          voidedAt: expect.any(Date),
         },
         type: 'SESSION_QUOTE_VOIDED',
       },
@@ -99,10 +65,9 @@ describe('sessionQuoteDecider', () => {
       cost: 4500,
       id,
       patientId,
-      pricedAt: expect.any(Date),
+      placedAt: expect.any(Date),
       reason: 'standard',
-      releasedAt: expect.any(Date),
-      repricedAt: null,
+      voidedAt: expect.any(Date),
       status: 'quoted',
     });
   });

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createDeciderAggregate } from '../../@utils/decider';
+import { createDeciderAggregate } from '../../../@utils/decider';
 import { economicsDecider } from './index';
 import type { State } from './types';
 

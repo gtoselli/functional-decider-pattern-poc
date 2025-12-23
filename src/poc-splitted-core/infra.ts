@@ -3,10 +3,10 @@ import { bookingDecider } from './booking';
 import type { BookingDecider, State as BookingState } from './booking/types';
 import { clinicalDecider } from './clinical';
 import type { ClinicalDecider } from './clinical/types';
-import { economicsDecider } from './patientEconomics';
-import type { EconomicsDecider } from './patientEconomics/types';
-import { sessionQuoteDecider } from './sessionQuote';
-import type { BillableSessionDecider, State as BillableSessionState } from './sessionQuote/types';
+import { economicsDecider } from './economics/patientEconomics';
+import type { EconomicsDecider } from './economics/patientEconomics/types';
+import { sessionQuoteDecider } from './economics/sessionQuote';
+import type { BillableSessionDecider, State as SessionQuoteState } from './economics/sessionQuote/types';
 
 type BookingAggregate = Aggregate<BookingDecider>;
 type ClinicalAggregate = Aggregate<ClinicalDecider>;
@@ -27,8 +27,8 @@ export function createBookingInMemRepo() {
   };
 }
 
-export function createSessionEconomicsInMemRepo() {
-  const STATE = new Map<string, BillableSessionState>();
+export function createSessionQuoteInMemRepo() {
+  const STATE = new Map<string, SessionQuoteState>();
 
   return {
     save(aggregate: BillableSessionAggregate) {
@@ -60,7 +60,7 @@ export function createClinicalInMemRepo() {
   };
 }
 
-export function createEconomicsInMemRepo() {
+export function createPatientEconomicsInMemRepo() {
   const STATE: Record<string, ReturnType<EconomicsAggregate['getState']>> = {};
 
   return {
