@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createAppService } from './appService';
 import { createBookingService } from './booking/service';
+import { createClinicalService } from './clinical/service';
 import { createEconomicsService } from './economics/service';
 import {
   createBookingInMemRepo,
@@ -11,10 +12,10 @@ import {
 } from './infra';
 
 describe('appService', () => {
-  const clinicalRepo = createClinicalInMemRepo();
+  const clinicalService = createClinicalService(createClinicalInMemRepo());
   const economicsService = createEconomicsService(createSessionQuoteInMemRepo(), createPatientEconomicsInMemRepo());
   const bookingService = createBookingService(createBookingInMemRepo());
-  const service = createAppService(economicsService, clinicalRepo, bookingService);
+  const service = createAppService(economicsService, clinicalService, bookingService);
 
   let patientId: string;
   let professionalId: string;
@@ -27,7 +28,7 @@ describe('appService', () => {
     it('should start path in clinical context', async () => {
       const { pathId } = await service.startPath({ patientId, pathType: 'wlm', professionalId });
 
-      expect(clinicalRepo.getById(patientId).getState()).toEqual({
+      expect(clinicalService.getPaths(patientId)).toEqual({
         id: patientId,
         paths: [
           {
@@ -60,7 +61,7 @@ describe('appService', () => {
     });
 
     it('should admit and classify session in clinical context', async () => {
-      expect(await service.getPath(patientId, pathId)).toMatchObject({
+      expect(clinicalService.getPath(patientId, pathId)).toMatchObject({
         sessions: [
           {
             id: sessionId,
@@ -125,7 +126,7 @@ describe('appService', () => {
     });
 
     it('should re classify path sessions in clinical context', async () => {
-      expect(await service.getPath(patientId, pathId)).toMatchObject({
+      expect(clinicalService.getPath(patientId, pathId)).toMatchObject({
         sessions: [{ id: sessionId, number: 3 }, { number: 1 }, { number: 2 }],
       });
     });
@@ -160,13 +161,13 @@ describe('appService', () => {
     });
 
     it('should revoke session in clinical context', async () => {
-      expect(await service.getPath(patientId, pathId)).toMatchObject({
+      expect(clinicalService.getPath(patientId, pathId)).toMatchObject({
         sessions: expect.arrayContaining([expect.objectContaining({ id: sessionId, revokedAt: expect.any(Date) })]),
       });
     });
 
     it('should re classify path sessions in clinical context', async () => {
-      expect(await service.getPath(patientId, pathId)).toMatchObject({
+      expect(clinicalService.getPath(patientId, pathId)).toMatchObject({
         sessions: [{ id: sessionId, number: 1 }, { number: 1 }, { number: 2 }],
       });
     });
