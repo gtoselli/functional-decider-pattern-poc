@@ -1,11 +1,12 @@
 import { getEvent, getEvents } from '../@utils/saga';
 import type { PathType } from '../shared-types';
-import type { createBookingInMemRepo, createClinicalInMemRepo, createEconomicsInMemRepo } from './infra';
+import type { createBookingService } from './booking/service';
+import type { createClinicalInMemRepo, createEconomicsInMemRepo } from './infra';
 
 export function createService(
   economicsRepo: ReturnType<typeof createEconomicsInMemRepo>,
   clinicalRepo: ReturnType<typeof createClinicalInMemRepo>,
-  bookingRepo: ReturnType<typeof createBookingInMemRepo>,
+  bookingService: ReturnType<typeof createBookingService>,
 ) {
   return {
     async startPath(params: {
@@ -35,13 +36,12 @@ export function createService(
       startAt: Date;
       pathId: string;
     }): Promise<{ sessionId: string }> {
-      const booking = bookingRepo.getById(params.patientId);
       const clinical = clinicalRepo.getById(params.patientId);
       const economics = economicsRepo.getById(params.patientId);
 
-      const bookingEvents = booking.run({
-        type: 'SCHEDULE_EVENT',
-        data: { startAt: params.startAt },
+      const bookingEvents = bookingService.scheduleEvent({
+        patientId: params.patientId,
+        startAt: params.startAt,
       });
       const eventScheduledEvent = getEvent(bookingEvents, 'EVENT_SCHEDULED');
 
@@ -58,25 +58,20 @@ export function createService(
         }),
       );
 
-      bookingRepo.save(booking);
       clinicalRepo.save(clinical);
       economicsRepo.save(economics);
 
       return { sessionId: eventScheduledEvent.data.id };
     },
     async rescheduleSession(params: { patientId: string; sessionId: string; startAt: Date }): Promise<void> {
-      const booking = bookingRepo.getById(params.patientId);
       const clinical = clinicalRepo.getById(params.patientId);
       const economics = economicsRepo.getById(params.patientId);
 
-      const bookingEvents = booking.run({
-        type: 'RESCHEDULE_EVENT',
-        data: { id: params.sessionId, startAt: params.startAt },
-      });
+      const bookingEvents = bookingService.rescheduleEvent({ eventId: params.sessionId, startAt: params.startAt });
       const eventRescheduledEvent = getEvent(bookingEvents, 'EVENT_RESCHEDULED');
 
       const clinicalEvents = clinical.run({
-        data: { id: eventRescheduledEvent.data.id, startAt: eventRescheduledEvent.data.startAt },
+        data: { id: params.sessionId, startAt: eventRescheduledEvent.data.startAt },
         type: 'REASSESS_SESSION',
       });
       const sessionClassifiedEvents = getEvents(clinicalEvents, 'SESSION_CLASSIFIED');
@@ -88,23 +83,17 @@ export function createService(
         }),
       );
 
-      bookingRepo.save(booking);
       clinicalRepo.save(clinical);
       economicsRepo.save(economics);
     },
     async cancelSession(params: { patientId: string; sessionId: string }): Promise<void> {
-      const booking = bookingRepo.getById(params.patientId);
       const clinical = clinicalRepo.getById(params.patientId);
       const economics = economicsRepo.getById(params.patientId);
 
-      const bookingEvents = booking.run({
-        type: 'CANCEL_EVENT',
-        data: { id: params.sessionId },
-      });
-      const eventsScheduledEvent = getEvent(bookingEvents, 'EVENT_CANCELLED');
+      bookingService.cancelEvent({ eventId: params.sessionId });
 
       const clinicalEvents = clinical.run({
-        data: { id: eventsScheduledEvent.data.id },
+        data: { id: params.sessionId },
         type: 'REVOKE_SESSION',
       });
       const sessionClassifiedEvents = getEvents(clinicalEvents, 'SESSION_CLASSIFIED');
@@ -123,18 +112,16 @@ export function createService(
         });
       });
 
-      bookingRepo.save(booking);
       clinicalRepo.save(clinical);
       economicsRepo.save(economics);
     },
     // async cancelPath(params: { patientId: string; pathId: string }): Promise<void> {},
 
     async getSession(patientId: string, sessionId: string) {
-      const booking = bookingRepo.getById(patientId);
+      const event = bookingService.getEvent(sessionId);
       const clinical = clinicalRepo.getById(patientId);
       const economics = economicsRepo.getById(patientId);
 
-      const event = booking.getState().events.find((a) => a.id === sessionId);
       const session = clinical
         .getState()
         .paths.flatMap((p) => p.sessions)
@@ -144,10 +131,8 @@ export function createService(
       return { event, session, price };
     },
 
-    async getEvent(patientId: string, eventId: string) {
-      const booking = bookingRepo.getById(patientId).getState();
-
-      return booking.events.find((e) => e.id === eventId);
+    async getEvent(eventId: string) {
+      return bookingService.getEvent(eventId);
     },
 
     async getPath(patientId: string, pathId: string) {

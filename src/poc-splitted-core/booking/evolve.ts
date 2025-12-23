@@ -4,34 +4,26 @@ export function evolve(state: State, event: Event): State {
   switch (event.type) {
     case 'EVENT_SCHEDULED': {
       return {
-        ...state,
-        events: [...state.events, { id: event.data.id, startAt: event.data.startAt, cancelledAt: null }],
+        id: event.data.id,
+        patientId: event.data.patientId,
+        startAt: event.data.startAt,
+        cancelledAt: null,
+        status: 'scheduled',
+        scheduledAt: event.data.scheduledAt,
       };
     }
     case 'EVENT_CANCELLED': {
+      if (state.status !== 'scheduled') return state;
       return {
         ...state,
-        events: state.events.map((e) =>
-          e.id === event.data.id
-            ? {
-                ...e,
-                cancelledAt: event.data.cancelledAt,
-              }
-            : e,
-        ),
+        cancelledAt: event.data.cancelledAt,
       };
     }
     case 'EVENT_RESCHEDULED': {
+      if (state.status !== 'scheduled') return state;
       return {
         ...state,
-        events: state.events.map((e) =>
-          e.id === event.data.id
-            ? {
-                ...e,
-                startAt: event.data.startAt,
-              }
-            : e,
-        ),
+        startAt: event.data.startAt,
       };
     }
     default: {

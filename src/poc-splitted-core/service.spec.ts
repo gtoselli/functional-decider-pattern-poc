@@ -1,13 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { createBookingService } from './booking/service';
 import { createBookingInMemRepo, createClinicalInMemRepo, createEconomicsInMemRepo } from './infra';
 import { createService } from './service';
 
 describe('service', () => {
   const clinicalRepo = createClinicalInMemRepo();
   const economicsRepo = createEconomicsInMemRepo();
-  const bookingRepo = createBookingInMemRepo();
-  const service = createService(economicsRepo, clinicalRepo, bookingRepo);
+  const bookingService = createBookingService(createBookingInMemRepo());
+  const service = createService(economicsRepo, clinicalRepo, bookingService);
 
   let patientId: string;
   let professionalId: string;
@@ -49,7 +50,7 @@ describe('service', () => {
     });
 
     it('should schedule event in booking context', async () => {
-      expect(await service.getEvent(patientId, sessionId)).toMatchObject({ id: sessionId, startAt });
+      expect(bookingService.getEvent(sessionId)).toMatchObject({ id: sessionId, startAt });
     });
 
     it('should admit and classify session in clinical context', async () => {
@@ -78,6 +79,7 @@ describe('service', () => {
           id: expect.any(String),
           startAt,
           cancelledAt: null,
+          patientId,
         },
         session: {
           id: expect.any(String),
@@ -112,7 +114,7 @@ describe('service', () => {
     });
 
     it('should reschedule event in booking context', async () => {
-      expect(await service.getEvent(patientId, sessionId)).toMatchObject({ startAt });
+      expect(bookingService.getEvent(sessionId)).toMatchObject({ startAt });
     });
 
     it('should re classify path sessions in clinical context', async () => {
@@ -147,7 +149,7 @@ describe('service', () => {
     });
 
     it('should cancel event in booking context', async () => {
-      expect(await service.getEvent(patientId, sessionId)).toMatchObject({
+      expect(bookingService.getEvent(sessionId)).toMatchObject({
         cancelledAt: expect.any(Date),
       });
     });
