@@ -2,12 +2,6 @@ import type { Decider } from '../../@utils/decider';
 
 export interface State {
   id: string;
-  prices: {
-    id: string;
-    cost: number;
-    reason: 'first_session' | 'standard';
-    status: 'quoted' | 'released';
-  }[];
 }
 
 interface QuoteServiceCmd {
@@ -24,7 +18,7 @@ export type Command = QuoteServiceCmd | ReleaseQuoteCmd;
 
 interface ServiceQuotedEvent {
   type: 'SERVICE_QUOTED';
-  data: { id: string; cost: number; reason: State['prices'][0]['reason'] };
+  data: { id: string; cost: number; reason: 'first_session' | 'standard' };
 }
 
 interface QuoteReleasedEvent {

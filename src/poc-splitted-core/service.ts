@@ -1,5 +1,6 @@
 import { getEvent, getEvents } from '../@utils/saga';
 import type { PathType } from '../shared-types';
+import type { createBillableSessionService } from './billableSession/service';
 import type { createBookingService } from './booking/service';
 import type { createClinicalInMemRepo, createEconomicsInMemRepo } from './infra';
 
@@ -7,6 +8,7 @@ export function createService(
   economicsRepo: ReturnType<typeof createEconomicsInMemRepo>,
   clinicalRepo: ReturnType<typeof createClinicalInMemRepo>,
   bookingService: ReturnType<typeof createBookingService>,
+  billableSessionService: ReturnType<typeof createBillableSessionService>,
 ) {
   return {
     async startPath(params: {
@@ -51,12 +53,22 @@ export function createService(
       });
       const sessionClassifiedEvents = getEvents(clinicalEvents, 'SESSION_CLASSIFIED');
 
-      const _economicsEvents = sessionClassifiedEvents.flatMap((sessionClassifiedEvent) =>
+      const economicsEvents = sessionClassifiedEvents.flatMap((sessionClassifiedEvent) =>
         economics.run({
           data: { sessionId: sessionClassifiedEvent.data.id, number: sessionClassifiedEvent.data.number },
           type: 'QUOTE_SERVICE',
         }),
       );
+      const serviceQuotedEvents = getEvents(economicsEvents, 'SERVICE_QUOTED');
+
+      serviceQuotedEvents.forEach((economicEvents) => {
+        billableSessionService.priceBillableSession({
+          sessionId: economicEvents.data.id,
+          patientId: params.patientId,
+          cost: economicEvents.data.cost,
+          reason: economicEvents.data.reason,
+        });
+      });
 
       clinicalRepo.save(clinical);
       economicsRepo.save(economics);
@@ -76,12 +88,22 @@ export function createService(
       });
       const sessionClassifiedEvents = getEvents(clinicalEvents, 'SESSION_CLASSIFIED');
 
-      const _economicsEvents = sessionClassifiedEvents.flatMap((sessionClassifiedEvent) =>
+      const economicsEvents = sessionClassifiedEvents.flatMap((sessionClassifiedEvent) =>
         economics.run({
           data: { sessionId: sessionClassifiedEvent.data.id, number: sessionClassifiedEvent.data.number },
           type: 'QUOTE_SERVICE',
         }),
       );
+      const serviceQuotedEvents = getEvents(economicsEvents, 'SERVICE_QUOTED');
+
+      serviceQuotedEvents.forEach((economicEvents) => {
+        billableSessionService.priceBillableSession({
+          sessionId: economicEvents.data.id,
+          patientId: params.patientId,
+          cost: economicEvents.data.cost,
+          reason: economicEvents.data.reason,
+        });
+      });
 
       clinicalRepo.save(clinical);
       economicsRepo.save(economics);
@@ -99,16 +121,32 @@ export function createService(
       const sessionClassifiedEvents = getEvents(clinicalEvents, 'SESSION_CLASSIFIED');
       const sessionRevokedEvents = getEvents(clinicalEvents, 'SESSION_REVOKED');
 
-      sessionClassifiedEvents.forEach((sessionClassifiedEvent) => {
+      const economicsEvents = sessionClassifiedEvents.flatMap((sessionClassifiedEvent) =>
         economics.run({
           data: { sessionId: sessionClassifiedEvent.data.id, number: sessionClassifiedEvent.data.number },
           type: 'QUOTE_SERVICE',
+        }),
+      );
+      const serviceQuotedEvents = getEvents(economicsEvents, 'SERVICE_QUOTED');
+      serviceQuotedEvents.forEach((serviceQuoted) => {
+        billableSessionService.priceBillableSession({
+          sessionId: serviceQuoted.data.id,
+          cost: serviceQuoted.data.cost,
+          patientId: params.patientId,
+          reason: serviceQuoted.data.reason,
         });
       });
-      sessionRevokedEvents.forEach((sessionRevokedEvent) => {
+
+      const economicsEvents2 = sessionRevokedEvents.flatMap((sessionRevokedEvent) =>
         economics.run({
           data: { sessionId: sessionRevokedEvent.data.id },
           type: 'RELEASE_QUOTE',
+        }),
+      );
+      const quoteReleasedEvents = getEvents(economicsEvents2, 'QUOTE_RELEASED');
+      quoteReleasedEvents.forEach((quoteReleased) => {
+        billableSessionService.releaseBillableSession({
+          sessionId: quoteReleased.data.id,
         });
       });
 
@@ -120,15 +158,14 @@ export function createService(
     async getSession(patientId: string, sessionId: string) {
       const event = bookingService.getEvent(sessionId);
       const clinical = clinicalRepo.getById(patientId);
-      const economics = economicsRepo.getById(patientId);
 
       const session = clinical
         .getState()
         .paths.flatMap((p) => p.sessions)
         .find((s) => s.id === sessionId);
-      const price = economics.getState().prices.find((s) => s.id === sessionId);
-      if (!event || !session || !price) throw new Error('Session not found');
-      return { event, session, price };
+      const billableSession = billableSessionService.getBillingSession(sessionId);
+      if (!event || !session || !billableSession) throw new Error('Session not found');
+      return { event, session, billableSession };
     },
 
     async getEvent(eventId: string) {

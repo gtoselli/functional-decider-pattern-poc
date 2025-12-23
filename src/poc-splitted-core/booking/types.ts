@@ -1,9 +1,8 @@
 import type { Decider } from '../../@utils/decider';
 
-export type State =
+export type State = { id: string } & (
   | {
       status: 'scheduled';
-      id: string;
       patientId: string;
       startAt: Date;
       cancelledAt: Date | null;
@@ -11,8 +10,8 @@ export type State =
     }
   | {
       status: 'initial';
-      id: string;
-    };
+    }
+);
 
 interface ScheduleEventCmd {
   type: 'SCHEDULE_EVENT';
