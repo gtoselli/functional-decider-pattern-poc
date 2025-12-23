@@ -5,7 +5,7 @@ export type State = { id: string } & (
       status: 'initial';
     }
   | {
-      status: 'priced';
+      status: 'quoted' | 'fulfilled' | 'cancelled';
       patientId: string;
       pricedAt: Date;
       cost: number;
@@ -15,35 +15,35 @@ export type State = { id: string } & (
     }
 );
 
-interface PriceBillableSessionCmd {
-  type: 'PRICE_BILLABLE_SESSION';
+interface PlaceSessionQuoteCmd {
+  type: 'PLACE_SESSION_QUOTE';
   data: { cost: number; reason: 'first_session' | 'standard'; patientId: string };
 }
 
-interface RepriceBillableSessionCmd {
-  type: 'REPRICE_BILLABLE_SESSION';
+interface ReplaceSessionQuoteCmd {
+  type: 'REPLACE_SESSION_QUOTE';
   data: { cost: number; reason: 'first_session' | 'standard' };
 }
 
-interface ReleaseBillableSessionCmd {
-  type: 'RELEASE_BILLABLE_SESSION';
+interface VoidSessionQuoteCmd {
+  type: 'VOID_SESSION_QUOTE';
   data: {};
 }
 
-export type Command = PriceBillableSessionCmd | RepriceBillableSessionCmd | ReleaseBillableSessionCmd;
+export type Command = PlaceSessionQuoteCmd | ReplaceSessionQuoteCmd | VoidSessionQuoteCmd;
 
-interface BillableSessionPricedEvent {
-  type: 'BILLABLE_SESSION_PRICED';
+interface SessionQuotePlacedEvent {
+  type: 'SESSION_QUOTE_PLACED';
   data: { id: string; patientId: string; pricedAt: Date; cost: number; reason: 'first_session' | 'standard' };
 }
-interface BillableSessionRePricedEvent {
-  type: 'BILLABLE_SESSION_REPRICED';
+interface SessionQuoteReplacedEvent {
+  type: 'SESSION_QUOTE_REPLACED';
   data: { repricedAt: Date; cost: number; reason: 'first_session' | 'standard' };
 }
-interface BillableSessionReleasedEvent {
-  type: 'BILLABLE_SESSION_RELEASED';
+interface SessionQuoteVoidedEvent {
+  type: 'SESSION_QUOTE_VOIDED';
   data: { releasedAt: Date };
 }
-export type Event = BillableSessionPricedEvent | BillableSessionRePricedEvent | BillableSessionReleasedEvent;
+export type Event = SessionQuotePlacedEvent | SessionQuoteReplacedEvent | SessionQuoteVoidedEvent;
 
 export type BillableSessionDecider = Decider<State, Command, Event>;

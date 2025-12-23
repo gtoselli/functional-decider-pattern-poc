@@ -1,20 +1,20 @@
 import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createBillableSessionService } from './billableSession/service';
 import { createBookingService } from './booking/service';
 import {
-  createBillableSessionInMemRepo,
   createBookingInMemRepo,
   createClinicalInMemRepo,
   createEconomicsInMemRepo,
+  createSessionEconomicsInMemRepo,
 } from './infra';
 import { createService } from './service';
+import { createSessionEconomicsService } from './sessionQuote/service';
 
 describe('service', () => {
   const clinicalRepo = createClinicalInMemRepo();
   const economicsRepo = createEconomicsInMemRepo();
   const bookingService = createBookingService(createBookingInMemRepo());
-  const billableSessionService = createBillableSessionService(createBillableSessionInMemRepo());
+  const billableSessionService = createSessionEconomicsService(createSessionEconomicsInMemRepo());
   const service = createService(economicsRepo, clinicalRepo, bookingService, billableSessionService);
 
   let patientId: string;

@@ -1,14 +1,14 @@
 import { getEvent, getEvents } from '../@utils/saga';
 import type { PathType } from '../shared-types';
-import type { createBillableSessionService } from './billableSession/service';
 import type { createBookingService } from './booking/service';
 import type { createClinicalInMemRepo, createEconomicsInMemRepo } from './infra';
+import type { createSessionEconomicsService } from './sessionQuote/service';
 
 export function createService(
   economicsRepo: ReturnType<typeof createEconomicsInMemRepo>,
   clinicalRepo: ReturnType<typeof createClinicalInMemRepo>,
   bookingService: ReturnType<typeof createBookingService>,
-  billableSessionService: ReturnType<typeof createBillableSessionService>,
+  billableSessionService: ReturnType<typeof createSessionEconomicsService>,
 ) {
   return {
     async startPath(params: {
@@ -62,7 +62,7 @@ export function createService(
       const serviceQuotedEvents = getEvents(economicsEvents, 'SERVICE_QUOTED');
 
       serviceQuotedEvents.forEach((economicEvents) => {
-        billableSessionService.priceBillableSession({
+        billableSessionService.place({
           sessionId: economicEvents.data.id,
           patientId: params.patientId,
           cost: economicEvents.data.cost,
@@ -97,7 +97,7 @@ export function createService(
       const serviceQuotedEvents = getEvents(economicsEvents, 'SERVICE_QUOTED');
 
       serviceQuotedEvents.forEach((economicEvents) => {
-        billableSessionService.priceBillableSession({
+        billableSessionService.place({
           sessionId: economicEvents.data.id,
           patientId: params.patientId,
           cost: economicEvents.data.cost,
@@ -129,7 +129,7 @@ export function createService(
       );
       const serviceQuotedEvents = getEvents(economicsEvents, 'SERVICE_QUOTED');
       serviceQuotedEvents.forEach((serviceQuoted) => {
-        billableSessionService.priceBillableSession({
+        billableSessionService.place({
           sessionId: serviceQuoted.data.id,
           cost: serviceQuoted.data.cost,
           patientId: params.patientId,
@@ -145,7 +145,7 @@ export function createService(
       );
       const quoteReleasedEvents = getEvents(economicsEvents2, 'QUOTE_RELEASED');
       quoteReleasedEvents.forEach((quoteReleased) => {
-        billableSessionService.releaseBillableSession({
+        billableSessionService.void({
           sessionId: quoteReleased.data.id,
         });
       });

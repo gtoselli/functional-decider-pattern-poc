@@ -1,21 +1,21 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createDeciderAggregate } from '../../@utils/decider';
-import { billableSessionDecider } from './index';
+import { sessionQuoteDecider } from './index';
 import type { State } from './types';
 
-describe('billableSessionDecider', () => {
+describe('sessionQuoteDecider', () => {
   const id = 'session-id';
   const patientId = 'foo-patient-id';
   const INITIAL_STATE = { id, status: 'initial' } satisfies State;
-  const aggregate = createDeciderAggregate(billableSessionDecider, INITIAL_STATE);
+  const aggregate = createDeciderAggregate(sessionQuoteDecider, INITIAL_STATE);
 
   beforeEach(() => {
     aggregate.resetToInitialState();
   });
 
-  it('price billable session', () => {
+  it('place', () => {
     const events = aggregate.run({
-      type: 'PRICE_BILLABLE_SESSION',
+      type: 'PLACE_SESSION_QUOTE',
       data: { cost: 4500, reason: 'standard', patientId },
     });
 
@@ -28,7 +28,7 @@ describe('billableSessionDecider', () => {
           pricedAt: expect.any(Date),
           reason: 'standard',
         },
-        type: 'BILLABLE_SESSION_PRICED',
+        type: 'SESSION_QUOTE_PLACED',
       },
     ]);
     expect(aggregate.getState()).toEqual({
@@ -39,18 +39,18 @@ describe('billableSessionDecider', () => {
       reason: 'standard',
       releasedAt: null,
       repricedAt: null,
-      status: 'priced',
+      status: 'quoted',
     });
   });
 
-  it('reprice billable session', () => {
+  it('replace', () => {
     aggregate.run({
-      type: 'PRICE_BILLABLE_SESSION',
+      type: 'PLACE_SESSION_QUOTE',
       data: { cost: 4500, reason: 'standard', patientId },
     });
 
     const events = aggregate.run({
-      type: 'REPRICE_BILLABLE_SESSION',
+      type: 'REPLACE_SESSION_QUOTE',
       data: { cost: 5000, reason: 'standard' },
     });
 
@@ -61,7 +61,7 @@ describe('billableSessionDecider', () => {
           repricedAt: expect.any(Date),
           reason: 'standard',
         },
-        type: 'BILLABLE_SESSION_REPRICED',
+        type: 'SESSION_QUOTE_REPLACED',
       },
     ]);
     expect(aggregate.getState()).toEqual({
@@ -72,18 +72,18 @@ describe('billableSessionDecider', () => {
       reason: 'standard',
       releasedAt: null,
       repricedAt: expect.any(Date),
-      status: 'priced',
+      status: 'quoted',
     });
   });
 
   it('release billable session', () => {
     aggregate.run({
-      type: 'PRICE_BILLABLE_SESSION',
+      type: 'PLACE_SESSION_QUOTE',
       data: { cost: 4500, reason: 'standard', patientId },
     });
 
     const events = aggregate.run({
-      type: 'RELEASE_BILLABLE_SESSION',
+      type: 'VOID_SESSION_QUOTE',
       data: {},
     });
 
@@ -92,7 +92,7 @@ describe('billableSessionDecider', () => {
         data: {
           releasedAt: expect.any(Date),
         },
-        type: 'BILLABLE_SESSION_RELEASED',
+        type: 'SESSION_QUOTE_VOIDED',
       },
     ]);
     expect(aggregate.getState()).toEqual({
@@ -103,7 +103,7 @@ describe('billableSessionDecider', () => {
       reason: 'standard',
       releasedAt: expect.any(Date),
       repricedAt: null,
-      status: 'priced',
+      status: 'quoted',
     });
   });
 });

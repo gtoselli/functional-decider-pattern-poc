@@ -2,8 +2,8 @@ import type { Command, Event, State } from './types';
 
 export function decide(cmd: Command, state: State): Event[] {
   switch (cmd.type) {
-    case 'PRICE_BILLABLE_SESSION': {
-      if (state.status !== 'initial') throw new Error('Billable Session already priced');
+    case 'PLACE_SESSION_QUOTE': {
+      if (state.status !== 'initial') throw new Error('Session quote already placed');
       return [
         {
           data: {
@@ -13,24 +13,24 @@ export function decide(cmd: Command, state: State): Event[] {
             reason: cmd.data.reason,
             pricedAt: new Date(),
           },
-          type: 'BILLABLE_SESSION_PRICED',
+          type: 'SESSION_QUOTE_PLACED',
         },
       ];
     }
-    case 'REPRICE_BILLABLE_SESSION': {
-      if (state.status !== 'priced') throw new Error('Billable Session not priced');
+    case 'REPLACE_SESSION_QUOTE': {
+      if (state.status !== 'quoted') throw new Error('Billable Session not placed');
 
       return [
         {
           data: { repricedAt: new Date(), cost: cmd.data.cost, reason: cmd.data.reason },
-          type: 'BILLABLE_SESSION_REPRICED',
+          type: 'SESSION_QUOTE_REPLACED',
         },
       ];
     }
-    case 'RELEASE_BILLABLE_SESSION': {
-      if (state.status !== 'priced') throw new Error('Billable Session not priced');
+    case 'VOID_SESSION_QUOTE': {
+      if (state.status !== 'quoted') throw new Error('Billable Session not placed');
 
-      return [{ data: { releasedAt: new Date() }, type: 'BILLABLE_SESSION_RELEASED' }];
+      return [{ data: { releasedAt: new Date() }, type: 'SESSION_QUOTE_VOIDED' }];
     }
 
     default: {

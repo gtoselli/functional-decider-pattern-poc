@@ -3,4 +3,4 @@ import { decide } from './decide';
 import { evolve } from './evolve';
 import type { Command, Event, State } from './types';
 
-export const billableSessionDecider: Decider<State, Command, Event> = { decide, evolve };
+export const sessionQuoteDecider: Decider<State, Command, Event> = { decide, evolve };
