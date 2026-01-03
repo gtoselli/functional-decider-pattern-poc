@@ -56,10 +56,6 @@ describe('appService', () => {
       sessionId = res.sessionId;
     });
 
-    it('should schedule event in booking context', async () => {
-      expect(bookingService.getEvent(sessionId)).toMatchObject({ id: sessionId, startAt });
-    });
-
     it('should admit and classify session in clinical context', async () => {
       expect(clinicalService.getPath(patientId, pathId)).toMatchObject({
         sessions: [
@@ -71,6 +67,10 @@ describe('appService', () => {
           },
         ],
       });
+    });
+
+    it('should schedule event in booking context', async () => {
+      expect(bookingService.getEvent(sessionId)).toMatchObject({ id: sessionId, startAt });
     });
 
     it('should quote price in economics context', async () => {
@@ -121,14 +121,14 @@ describe('appService', () => {
       await service.rescheduleSession({ sessionId, patientId, startAt });
     });
 
-    it('should reschedule event in booking context', async () => {
-      expect(bookingService.getEvent(sessionId)).toMatchObject({ startAt });
-    });
-
     it('should re classify path sessions in clinical context', async () => {
       expect(clinicalService.getPath(patientId, pathId)).toMatchObject({
         sessions: [{ id: sessionId, number: 3 }, { number: 1 }, { number: 2 }],
       });
+    });
+
+    it('should reschedule event in booking context', async () => {
+      expect(bookingService.getEvent(sessionId)).toMatchObject({ startAt });
     });
 
     it('should re quote other prices in economics context', async () => {
@@ -154,12 +154,6 @@ describe('appService', () => {
       await service.cancelSession({ sessionId, patientId });
     });
 
-    it('should cancel event in booking context', async () => {
-      expect(bookingService.getEvent(sessionId)).toMatchObject({
-        cancelledAt: expect.any(Date),
-      });
-    });
-
     it('should revoke session in clinical context', async () => {
       expect(clinicalService.getPath(patientId, pathId)).toMatchObject({
         sessions: expect.arrayContaining([expect.objectContaining({ id: sessionId, revokedAt: expect.any(Date) })]),
@@ -169,6 +163,12 @@ describe('appService', () => {
     it('should re classify path sessions in clinical context', async () => {
       expect(clinicalService.getPath(patientId, pathId)).toMatchObject({
         sessions: [{ id: sessionId, number: 1 }, { number: 1 }, { number: 2 }],
+      });
+    });
+
+    it('should cancel event in booking context', async () => {
+      expect(bookingService.getEvent(sessionId)).toMatchObject({
+        cancelledAt: expect.any(Date),
       });
     });
 

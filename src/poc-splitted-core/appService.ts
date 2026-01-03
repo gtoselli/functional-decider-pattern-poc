@@ -32,19 +32,19 @@ export function createAppService(
       startAt: Date;
       pathId: string;
     }): Promise<{ sessionId: string }> {
-      const bookingEvents = bookingService.scheduleEvent({
-        patientId: params.patientId,
-        startAt: params.startAt,
-      });
-      const eventScheduledEvent = getEvent(bookingEvents, 'EVENT_SCHEDULED');
-
       const clinicalEvents = clinicalService.admitSession({
         patientId: params.patientId,
         pathId: params.pathId,
-        sessionId: eventScheduledEvent.data.id,
-        startAt: eventScheduledEvent.data.startAt,
+        startAt: params.startAt,
       });
+      const sessionAdmittedEvent = getEvent(clinicalEvents, 'SESSION_ADMITTED');
       const sessionClassifiedEvents = getEvents(clinicalEvents, 'SESSION_CLASSIFIED');
+
+      bookingService.scheduleEvent({
+        patientId: params.patientId,
+        startAt: params.startAt,
+        eventId: sessionAdmittedEvent.data.id,
+      });
 
       sessionClassifiedEvents.flatMap((sessionClassifiedEvent) =>
         economicsService.placeSessionOrder({
@@ -54,19 +54,17 @@ export function createAppService(
         }),
       );
 
-      return { sessionId: eventScheduledEvent.data.id };
+      return { sessionId: sessionAdmittedEvent.data.id };
     },
     async rescheduleSession(params: { patientId: string; sessionId: string; startAt: Date }): Promise<void> {
-      const bookingEvents = bookingService.rescheduleEvent({ eventId: params.sessionId, startAt: params.startAt });
-      const eventRescheduledEvent = getEvent(bookingEvents, 'EVENT_RESCHEDULED');
-
       const clinicalEvents = clinicalService.reassessSession({
         patientId: params.patientId,
-        startAt: eventRescheduledEvent.data.startAt,
+        startAt: params.startAt,
         sessionId: params.sessionId,
       });
-      const sessionClassifiedEvents = getEvents(clinicalEvents, 'SESSION_CLASSIFIED');
+      bookingService.rescheduleEvent({ eventId: params.sessionId, startAt: params.startAt });
 
+      const sessionClassifiedEvents = getEvents(clinicalEvents, 'SESSION_CLASSIFIED');
       sessionClassifiedEvents.flatMap((sessionClassifiedEvent) =>
         economicsService.placeSessionOrder({
           patientId: params.patientId,
@@ -76,14 +74,14 @@ export function createAppService(
       );
     },
     async cancelSession(params: { patientId: string; sessionId: string }): Promise<void> {
-      bookingService.cancelEvent({ eventId: params.sessionId });
-
       const clinicalEvents = clinicalService.revokeSession({
         patientId: params.patientId,
         sessionId: params.sessionId,
       });
       const sessionClassifiedEvents = getEvents(clinicalEvents, 'SESSION_CLASSIFIED');
       const sessionRevokedEvents = getEvents(clinicalEvents, 'SESSION_REVOKED');
+
+      bookingService.cancelEvent({ eventId: params.sessionId });
 
       sessionClassifiedEvents.flatMap((sessionClassifiedEvent) =>
         economicsService.placeSessionOrder({

@@ -1,14 +1,15 @@
+import { randomUUID } from 'node:crypto';
 import type { PathType } from '../../shared-types';
 import type { createClinicalInMemRepo } from '../infra';
 
 export function createClinicalService(clinicalRepo: ReturnType<typeof createClinicalInMemRepo>) {
   return {
-    admitSession(params: { patientId: string; sessionId: string; startAt: Date; pathId: string }) {
+    admitSession(params: { patientId: string; startAt: Date; pathId: string }) {
       const clinical = clinicalRepo.getById(params.patientId);
 
       const events = clinical.run({
         type: 'ADMIT_SESSION',
-        data: { startAt: params.startAt, id: params.sessionId, pathId: params.pathId },
+        data: { startAt: params.startAt, id: randomUUID(), pathId: params.pathId },
       });
 
       clinicalRepo.save(clinical);

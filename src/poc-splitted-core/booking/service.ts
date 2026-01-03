@@ -1,11 +1,9 @@
-import { randomUUID } from 'node:crypto';
 import type { createBookingInMemRepo } from '../infra';
 
 export function createBookingService(bookingRepo: ReturnType<typeof createBookingInMemRepo>) {
   return {
-    scheduleEvent(params: { patientId: string; startAt: Date }) {
-      const id = randomUUID();
-      const event = bookingRepo.getById(id);
+    scheduleEvent(params: { patientId: string; startAt: Date; eventId: string }) {
+      const event = bookingRepo.getById(params.eventId);
 
       const events = event.run({
         type: 'SCHEDULE_EVENT',
