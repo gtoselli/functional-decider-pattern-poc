@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import type { Command, Event, State } from './types';
+import type { PathType } from '../../shared-types';
+import type { Command, Event, ProfessionalRole, State } from './types';
 
 export function decide(cmd: Command, state: State): Event[] {
   switch (cmd.type) {
@@ -56,14 +57,17 @@ export function decide(cmd: Command, state: State): Event[] {
     }
 
     case 'ADD_PROFESSIONAL': {
-      const path = state.paths.find((p) => p.id);
+      const path = state.paths.find((p) => p.id === cmd.data.pathId);
       if (!path) throw new Error('Path not found');
       if (path.professionals.find((p) => p.id === cmd.data.professionalId))
         throw new Error('Professional already in the path');
+      if (path.professionals.find((p) => p.role === cmd.data.role))
+        throw new Error('Professional role already in the path');
+      if (!professionalRoleIsAllowedForPath(cmd.data.role, path.type)) throw new Error('Role not allowed for path');
 
       return [
         {
-          data: { pathId: path.id, professionalId: cmd.data.professionalId, addedAt: new Date() },
+          data: { pathId: path.id, professionalId: cmd.data.professionalId, addedAt: new Date(), role: cmd.data.role },
           type: 'PROFESSIONAL_ADDED',
         },
       ];
@@ -114,4 +118,10 @@ function getSessionById(path: State['paths'][0], sessionId: string) {
   const session = path.sessions.find((s) => s.id === sessionId);
   if (!session) throw new Error('Session not found');
   return session;
+}
+
+function professionalRoleIsAllowedForPath(role: ProfessionalRole, pathType: PathType) {
+  if (pathType === 'wlm') return ['dietitian', 'nutritionist'].includes(role);
+  else if (pathType === 'psychotherapy') return role === 'professional';
+  throw new Error('Unknown pathType');
 }

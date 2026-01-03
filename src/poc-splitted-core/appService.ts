@@ -2,6 +2,7 @@ import { getEvent, getEvents } from '../@utils/saga';
 import type { PathType } from '../shared-types';
 import type { createBookingService } from './booking/service';
 import type { createClinicalService } from './clinical/service';
+import type { ProfessionalRole } from './clinical/types';
 import type { createEconomicsService } from './economics/service';
 
 export function createAppService(
@@ -14,6 +15,7 @@ export function createAppService(
       patientId: string;
       pathType: PathType;
       professionalId: string;
+      professionalRole: ProfessionalRole;
     }): Promise<{ pathId: string }> {
       const clinicalEvents = clinicalService.startPath({ patientId: params.patientId, pathType: params.pathType });
       const pathStartedEvent = getEvent(clinicalEvents, 'PATH_STARTED');
@@ -22,11 +24,24 @@ export function createAppService(
         patientId: params.patientId,
         professionalId: params.professionalId,
         pathId: pathStartedEvent.data.id,
+        role: params.professionalRole,
       });
 
       return { pathId: pathStartedEvent.data.id };
     },
-
+    async addProfessional(params: {
+      patientId: string;
+      pathId: string;
+      professionalId: string;
+      role: ProfessionalRole;
+    }) {
+      clinicalService.addProfessional({
+        patientId: params.patientId,
+        pathId: params.pathId,
+        professionalId: params.professionalId,
+        role: params.role,
+      });
+    },
     async scheduleSession(params: {
       patientId: string;
       startAt: Date;

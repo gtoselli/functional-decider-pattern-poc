@@ -71,7 +71,10 @@ export function evolve(state: State, event: Event): State {
           s.id === event.data.pathId
             ? {
                 ...s,
-                professionals: [...s.professionals, { id: event.data.professionalId, addedAt: event.data.addedAt }],
+                professionals: [
+                  ...s.professionals,
+                  { id: event.data.professionalId, addedAt: event.data.addedAt, role: event.data.role },
+                ],
               }
             : s,
         ),

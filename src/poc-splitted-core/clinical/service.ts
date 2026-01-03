@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { PathType } from '../../shared-types';
 import type { createClinicalInMemRepo } from '../infra';
+import type { ProfessionalRole } from './types';
 
 export function createClinicalService(clinicalRepo: ReturnType<typeof createClinicalInMemRepo>) {
   return {
@@ -40,12 +41,12 @@ export function createClinicalService(clinicalRepo: ReturnType<typeof createClin
       return events;
     },
 
-    addProfessional(params: { patientId: string; pathId: string; professionalId: string }) {
+    addProfessional(params: { patientId: string; pathId: string; professionalId: string; role: ProfessionalRole }) {
       const clinical = clinicalRepo.getById(params.patientId);
 
       const events = clinical.run({
         type: 'ADD_PROFESSIONAL',
-        data: { pathId: params.pathId, professionalId: params.professionalId },
+        data: { pathId: params.pathId, professionalId: params.professionalId, role: params.role },
       });
 
       clinicalRepo.save(clinical);

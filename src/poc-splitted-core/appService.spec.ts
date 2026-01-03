@@ -26,14 +26,19 @@ describe('appService', () => {
 
   describe('startPath', () => {
     it('should start path in clinical context', async () => {
-      const { pathId } = await service.startPath({ patientId, pathType: 'wlm', professionalId });
+      const { pathId } = await service.startPath({
+        patientId,
+        pathType: 'wlm',
+        professionalId,
+        professionalRole: 'dietitian',
+      });
 
       expect(clinicalService.getPaths(patientId)).toEqual({
         id: patientId,
         paths: [
           {
             id: pathId,
-            professionals: [{ id: professionalId, addedAt: expect.any(Date) }],
+            professionals: [{ id: professionalId, addedAt: expect.any(Date), role: 'dietitian' }],
             sessions: [],
             startedAt: expect.any(Date),
             type: 'wlm',
@@ -49,7 +54,12 @@ describe('appService', () => {
     const startAt = new Date('2026-01-01');
 
     beforeEach(async () => {
-      const pathRes = await service.startPath({ patientId, pathType: 'wlm', professionalId });
+      const pathRes = await service.startPath({
+        patientId,
+        pathType: 'wlm',
+        professionalId,
+        professionalRole: 'dietitian',
+      });
       pathId = pathRes.pathId;
 
       const res = await service.scheduleSession({ patientId, startAt, pathId });
@@ -111,7 +121,12 @@ describe('appService', () => {
     const startAt = new Date('2026-01-04');
 
     beforeEach(async () => {
-      const pathRes = await service.startPath({ patientId, pathType: 'wlm', professionalId });
+      const pathRes = await service.startPath({
+        patientId,
+        pathType: 'wlm',
+        professionalId,
+        professionalRole: 'dietitian',
+      });
       pathId = pathRes.pathId;
       const res = await service.scheduleSession({ patientId, startAt: new Date('2026-01-01'), pathId: pathId });
       sessionId = res.sessionId;
@@ -144,7 +159,12 @@ describe('appService', () => {
     let pathId: string;
     let sessionId: string;
     beforeEach(async () => {
-      const pathRes = await service.startPath({ patientId, pathType: 'wlm', professionalId });
+      const pathRes = await service.startPath({
+        patientId,
+        pathType: 'wlm',
+        professionalId,
+        professionalRole: 'dietitian',
+      });
       pathId = pathRes.pathId;
       const res = await service.scheduleSession({ patientId, startAt: new Date('2026-01-01'), pathId });
       sessionId = res.sessionId;

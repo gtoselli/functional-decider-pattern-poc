@@ -30,13 +30,17 @@ describe('clinicalDecider', () => {
     aggregate.run({ type: 'START_PATH', data: { pathType: 'psychotherapy' } });
     const path = aggregate.getState().paths[0];
 
-    const events = aggregate.run({ type: 'ADD_PROFESSIONAL', data: { professionalId: 'pro-id', pathId: path.id } });
+    const events = aggregate.run({
+      type: 'ADD_PROFESSIONAL',
+      data: { professionalId: 'pro-id', pathId: path.id, role: 'professional' },
+    });
     expect(events).toEqual([
       {
         data: {
           addedAt: expect.any(Date),
           pathId: path.id,
           professionalId: 'pro-id',
+          role: 'professional',
         },
         type: 'PROFESSIONAL_ADDED',
       },
@@ -50,6 +54,7 @@ describe('clinicalDecider', () => {
             {
               addedAt: expect.any(Date),
               id: 'pro-id',
+              role: 'professional',
             },
           ],
           sessions: [],
@@ -58,6 +63,29 @@ describe('clinicalDecider', () => {
         },
       ],
     });
+
+    expect(() =>
+      aggregate.run({
+        type: 'ADD_PROFESSIONAL',
+        data: { professionalId: 'pro-id', pathId: path.id, role: 'professional' },
+      }),
+    ).toThrow('Professional already in the path');
+
+    expect(() =>
+      aggregate.run({
+        type: 'ADD_PROFESSIONAL',
+        data: { professionalId: 'pro-id-1', pathId: path.id, role: 'professional' },
+      }),
+    ).toThrow('Professional role already in the path');
+
+    aggregate.run({ type: 'START_PATH', data: { pathType: 'wlm' } });
+    const wlmPath = aggregate.getState().paths[1];
+    expect(() =>
+      aggregate.run({
+        type: 'ADD_PROFESSIONAL',
+        data: { professionalId: 'pro-id', pathId: wlmPath.id, role: 'professional' },
+      }),
+    ).toThrow('Role not allowed for path');
   });
 
   it('admit session', () => {
