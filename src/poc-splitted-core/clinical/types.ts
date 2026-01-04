@@ -9,6 +9,7 @@ export interface State {
     startedAt: Date;
     professionals: { id: string; addedAt: Date; role: ProfessionalRole }[];
     sessions: { id: string; number: number; startAt: Date; revokedAt: Date | null }[];
+    cycle?: { startedAt: Date; endedAt?: Date };
   }[];
 }
 

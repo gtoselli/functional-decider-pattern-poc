@@ -12,6 +12,13 @@ export function decide(cmd: Command, state: State): Event[] {
       const path = state.paths.find((p) => p.id);
       if (!path) throw new Error('Path not found');
 
+      const firstSession = path.sessions.find((s) => s.number === 1);
+      if (firstSession && cmd.data.startAt.getTime() < firstSession.startAt.getTime())
+        throw new Error('CANNOT_SCHEDULE_BEFORE_FIRST_SESSION');
+
+      const sessionNumber = calculateNewSessionNumber(path, cmd.data.id, cmd.data.startAt);
+      assertCanAdmitSession(path, sessionNumber);
+
       const events: Event[] = [
         { data: { id: cmd.data.id, startAt: cmd.data.startAt, pathId: cmd.data.pathId }, type: 'SESSION_ADMITTED' },
       ];
@@ -20,7 +27,6 @@ export function decide(cmd: Command, state: State): Event[] {
         ...path.sessions.map((s) => ({ id: s.id, startAt: s.startAt, oldNumber: s.number })),
         { id: cmd.data.id, startAt: cmd.data.startAt, oldNumber: 0 },
       ];
-
       events.push(...classifySessions(sessions, path.id));
 
       return events;
@@ -80,16 +86,33 @@ export function decide(cmd: Command, state: State): Event[] {
   }
 }
 
+function calculateSessionNumbers(sessions: { id: string; startAt: Date }[]): { id: string; number: number }[] {
+  const sortedSessions = [...sessions].sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
+  return sortedSessions.map((session, index) => ({
+    id: session.id,
+    number: index + 1,
+  }));
+}
+
+function calculateNewSessionNumber(path: State['paths'][0], newSessionId: string, newStartAt: Date): number {
+  const allSessions = [
+    ...path.sessions.map((s) => ({ id: s.id, startAt: s.startAt })),
+    { id: newSessionId, startAt: newStartAt },
+  ];
+  return calculateSessionNumbers(allSessions).find((s) => s.id === newSessionId)!.number;
+}
+
 function classifySessions(
   sessions: { id: string; startAt: Date; oldNumber: number; oldStartAt?: Date }[],
   pathId: string,
 ): Event[] {
-  const sortedSessions = sessions.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
+  const numberedSessions = calculateSessionNumbers(sessions);
 
   const events: Event[] = [];
-  sortedSessions.forEach((session, index) => {
-    const newNumber = index + 1;
-    const numberChanged = session.oldNumber !== newNumber;
+  numberedSessions.forEach((numbered) => {
+    // biome-ignore lint/style/noNonNullAssertion: not needeed
+    const session = sessions.find((s) => s.id === numbered.id)!;
+    const numberChanged = session.oldNumber !== numbered.number;
     const startAtChanged = session.oldStartAt && session.startAt.getTime() !== session.oldStartAt.getTime();
 
     if (numberChanged || startAtChanged) {
@@ -97,7 +120,7 @@ function classifySessions(
         type: 'SESSION_CLASSIFIED',
         data: {
           id: session.id,
-          number: newNumber,
+          number: numbered.number,
           startAt: session.startAt,
           pathId,
         },
@@ -124,4 +147,14 @@ function professionalRoleIsAllowedForPath(role: ProfessionalRole, pathType: Path
   if (pathType === 'wlm') return ['dietitian', 'nutritionist'].includes(role);
   else if (pathType === 'psychotherapy') return role === 'professional';
   throw new Error('Unknown pathType');
+}
+
+function assertCanAdmitSession(path: State['paths'][0], sessionNumber: number) {
+  if (path.type === 'psychotherapy') return;
+  else if (path.type === 'wlm') {
+    if (sessionNumber === 1) return;
+    if (!path.cycle) throw new Error('PATH_CYCLE_NOT_STARTED');
+    if (path.cycle.endedAt) throw new Error('PATH_CYCLE_ENDED');
+    //TODO add step logic
+  }
 }

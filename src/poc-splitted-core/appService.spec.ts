@@ -123,9 +123,9 @@ describe('appService', () => {
     beforeEach(async () => {
       const pathRes = await service.startPath({
         patientId,
-        pathType: 'wlm',
+        pathType: 'psychotherapy',
         professionalId,
-        professionalRole: 'dietitian',
+        professionalRole: 'professional',
       });
       pathId = pathRes.pathId;
       const res = await service.scheduleSession({ patientId, startAt: new Date('2026-01-01'), pathId: pathId });
@@ -161,9 +161,9 @@ describe('appService', () => {
     beforeEach(async () => {
       const pathRes = await service.startPath({
         patientId,
-        pathType: 'wlm',
+        pathType: 'psychotherapy',
         professionalId,
-        professionalRole: 'dietitian',
+        professionalRole: 'professional',
       });
       pathId = pathRes.pathId;
       const res = await service.scheduleSession({ patientId, startAt: new Date('2026-01-01'), pathId });
