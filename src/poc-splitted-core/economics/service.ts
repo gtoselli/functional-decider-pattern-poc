@@ -6,9 +6,9 @@ export function createEconomicsService(
   patientEconomicsRepo: ReturnType<typeof createPatientEconomicsInMemRepo>,
 ) {
   return {
-    placeSessionOrder(params: { patientId: string; sessionId: string; sessionNumber: number }) {
-      const patientEconomics = patientEconomicsRepo.getById(params.patientId);
-      const sessionOrder = sessionOrderRepo.getById(params.sessionId);
+    async placeSessionOrder(params: { patientId: string; sessionId: string; sessionNumber: number }) {
+      const patientEconomics = await patientEconomicsRepo.getById(params.patientId);
+      const sessionOrder = await sessionOrderRepo.getById(params.sessionId);
 
       const patientEconomicsEvents = patientEconomics.run({
         type: 'PRICE_SESSION',
@@ -25,14 +25,14 @@ export function createEconomicsService(
         },
       });
 
-      patientEconomicsRepo.save(patientEconomics);
-      sessionOrderRepo.save(sessionOrder);
+      await patientEconomicsRepo.save(patientEconomics);
+      await sessionOrderRepo.save(sessionOrder);
       return [...patientEconomicsEvents, ...sessionOrderEvents];
     },
 
-    voidSessionOrder(params: { patientId: string; sessionId: string }) {
-      const patientEconomics = patientEconomicsRepo.getById(params.patientId);
-      const sessionOrder = sessionOrderRepo.getById(params.sessionId);
+    async voidSessionOrder(params: { patientId: string; sessionId: string }) {
+      const patientEconomics = await patientEconomicsRepo.getById(params.patientId);
+      const sessionOrder = await sessionOrderRepo.getById(params.sessionId);
 
       const patientEconomicsEvents = patientEconomics.run({
         type: 'VOID_SESSION_PRICE',
@@ -44,17 +44,17 @@ export function createEconomicsService(
         data: {},
       });
 
-      patientEconomicsRepo.save(patientEconomics);
-      sessionOrderRepo.save(sessionOrder);
+      await patientEconomicsRepo.save(patientEconomics);
+      await sessionOrderRepo.save(sessionOrder);
       return [...patientEconomicsEvents, ...sessionOrderEvents];
     },
 
-    getSessionOrder(sessionId: string) {
-      return sessionOrderRepo.getById(sessionId).getState();
+    async getSessionOrder(sessionId: string) {
+      return (await sessionOrderRepo.getById(sessionId)).getState();
     },
 
-    getSessionOrders(patientId: string) {
-      return sessionOrderRepo.getAll(patientId);
+    async getSessionOrders(patientId: string) {
+      return await sessionOrderRepo.getAll(patientId);
     },
   };
 }

@@ -33,7 +33,7 @@ describe('appService', () => {
         professionalRole: 'dietitian',
       });
 
-      expect(clinicalService.getPaths(patientId)).toEqual({
+      expect(await clinicalService.getPaths(patientId)).toEqual({
         id: patientId,
         paths: [
           {
@@ -67,7 +67,7 @@ describe('appService', () => {
     });
 
     it('should admit and classify session in clinical context', async () => {
-      expect(clinicalService.getPath(patientId, pathId)).toMatchObject({
+      expect(await clinicalService.getPath(patientId, pathId)).toMatchObject({
         sessions: [
           {
             id: sessionId,
@@ -80,11 +80,11 @@ describe('appService', () => {
     });
 
     it('should schedule event in booking context', async () => {
-      expect(bookingService.getEvent(sessionId)).toMatchObject({ id: sessionId, startAt });
+      expect(await bookingService.getEvent(sessionId)).toMatchObject({ id: sessionId, startAt });
     });
 
     it('should quote price in economics context', async () => {
-      expect(economicsService.getSessionOrder(sessionId)).toMatchObject({
+      expect(await economicsService.getSessionOrder(sessionId)).toMatchObject({
         id: sessionId,
         cost: 0,
         reason: 'first_session',
@@ -137,17 +137,17 @@ describe('appService', () => {
     });
 
     it('should re classify path sessions in clinical context', async () => {
-      expect(clinicalService.getPath(patientId, pathId)).toMatchObject({
+      expect(await clinicalService.getPath(patientId, pathId)).toMatchObject({
         sessions: [{ id: sessionId, number: 3 }, { number: 1 }, { number: 2 }],
       });
     });
 
     it('should reschedule event in booking context', async () => {
-      expect(bookingService.getEvent(sessionId)).toMatchObject({ startAt });
+      expect(await bookingService.getEvent(sessionId)).toMatchObject({ startAt });
     });
 
     it('should re quote other prices in economics context', async () => {
-      expect(economicsService.getSessionOrders(patientId)).toEqual([
+      expect(await economicsService.getSessionOrders(patientId)).toEqual([
         expect.objectContaining({ id: sessionId, cost: 4500, voidedAt: null }),
         expect.objectContaining({ cost: 0, voidedAt: null }),
         expect.objectContaining({ cost: 4500, voidedAt: null }),
@@ -175,29 +175,29 @@ describe('appService', () => {
     });
 
     it('should revoke session in clinical context', async () => {
-      expect(clinicalService.getPath(patientId, pathId)).toMatchObject({
+      expect(await clinicalService.getPath(patientId, pathId)).toMatchObject({
         sessions: expect.arrayContaining([expect.objectContaining({ id: sessionId, revokedAt: expect.any(Date) })]),
       });
     });
 
     it('should re classify path sessions in clinical context', async () => {
-      expect(clinicalService.getPath(patientId, pathId)).toMatchObject({
+      expect(await clinicalService.getPath(patientId, pathId)).toMatchObject({
         sessions: [{ id: sessionId, number: 1 }, { number: 1 }, { number: 2 }],
       });
     });
 
     it('should cancel event in booking context', async () => {
-      expect(bookingService.getEvent(sessionId)).toMatchObject({
+      expect(await bookingService.getEvent(sessionId)).toMatchObject({
         cancelledAt: expect.any(Date),
       });
     });
 
     it('should release quote in economics context', async () => {
-      expect(economicsService.getSessionOrder(sessionId)).toMatchObject({ voidedAt: expect.any(Date) });
+      expect(await economicsService.getSessionOrder(sessionId)).toMatchObject({ voidedAt: expect.any(Date) });
     });
 
     it('should re quote other prices in economics context', async () => {
-      expect(economicsService.getSessionOrders(patientId)).toEqual([
+      expect(await economicsService.getSessionOrders(patientId)).toEqual([
         expect.objectContaining({ id: sessionId, cost: 0, voidedAt: expect.any(Date) }),
         expect.objectContaining({ cost: 0 }),
         expect.objectContaining({ cost: 4500 }),

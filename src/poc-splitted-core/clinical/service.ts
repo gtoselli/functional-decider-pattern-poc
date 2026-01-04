@@ -5,83 +5,84 @@ import type { ProfessionalRole } from './types';
 
 export function createClinicalService(clinicalRepo: ReturnType<typeof createClinicalInMemRepo>) {
   return {
-    admitSession(params: { patientId: string; startAt: Date; pathId: string }) {
-      const clinical = clinicalRepo.getById(params.patientId);
+    async admitSession(params: { patientId: string; startAt: Date; pathId: string }) {
+      const clinical = await clinicalRepo.getById(params.patientId);
 
       const events = clinical.run({
         type: 'ADMIT_SESSION',
         data: { startAt: params.startAt, id: randomUUID(), pathId: params.pathId },
       });
 
-      clinicalRepo.save(clinical);
+      await clinicalRepo.save(clinical);
       return events;
     },
 
-    reassessSession(params: { patientId: string; sessionId: string; startAt: Date }) {
-      const clinical = clinicalRepo.getById(params.patientId);
+    async reassessSession(params: { patientId: string; sessionId: string; startAt: Date }) {
+      const clinical = await clinicalRepo.getById(params.patientId);
 
       const events = clinical.run({
         type: 'REASSESS_SESSION',
         data: { startAt: params.startAt, id: params.sessionId },
       });
 
-      clinicalRepo.save(clinical);
+      await clinicalRepo.save(clinical);
       return events;
     },
 
-    revokeSession(params: { patientId: string; sessionId: string }) {
-      const clinical = clinicalRepo.getById(params.patientId);
+    async revokeSession(params: { patientId: string; sessionId: string }) {
+      const clinical = await clinicalRepo.getById(params.patientId);
 
       const events = clinical.run({
         type: 'REVOKE_SESSION',
         data: { id: params.sessionId },
       });
 
-      clinicalRepo.save(clinical);
+      await clinicalRepo.save(clinical);
       return events;
     },
 
-    addProfessional(params: { patientId: string; pathId: string; professionalId: string; role: ProfessionalRole }) {
-      const clinical = clinicalRepo.getById(params.patientId);
+    async addProfessional(params: {
+      patientId: string;
+      pathId: string;
+      professionalId: string;
+      role: ProfessionalRole;
+    }) {
+      const clinical = await clinicalRepo.getById(params.patientId);
 
       const events = clinical.run({
         type: 'ADD_PROFESSIONAL',
         data: { pathId: params.pathId, professionalId: params.professionalId, role: params.role },
       });
 
-      clinicalRepo.save(clinical);
+      await clinicalRepo.save(clinical);
       return events;
     },
 
-    startPath(params: { patientId: string; pathType: PathType }) {
-      const clinical = clinicalRepo.getById(params.patientId);
+    async startPath(params: { patientId: string; pathType: PathType }) {
+      const clinical = await clinicalRepo.getById(params.patientId);
 
       const events = clinical.run({
         type: 'START_PATH',
         data: { pathType: params.pathType },
       });
 
-      clinicalRepo.save(clinical);
+      await clinicalRepo.save(clinical);
       return events;
     },
 
-    getSession(patientId: string, sessionId: string) {
-      return clinicalRepo
-        .getById(patientId)
+    async getSession(patientId: string, sessionId: string) {
+      return (await clinicalRepo.getById(patientId))
         .getState()
         .paths.flatMap((p) => p.sessions)
         .find((s) => s.id === sessionId);
     },
 
-    getPath(patientId: string, pathId: string) {
-      return clinicalRepo
-        .getById(patientId)
-        .getState()
-        .paths.find((p) => p.id === pathId);
+    async getPath(patientId: string, pathId: string) {
+      return (await clinicalRepo.getById(patientId)).getState().paths.find((p) => p.id === pathId);
     },
 
-    getPaths(patientId: string) {
-      return clinicalRepo.getById(patientId).getState();
+    async getPaths(patientId: string) {
+      return (await clinicalRepo.getById(patientId)).getState();
     },
   };
 }
