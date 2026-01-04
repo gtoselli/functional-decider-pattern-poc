@@ -11,7 +11,7 @@ Booking
 - Cancel Event -> Event Cancelled
 
 Clinical
-- Admit Session -> Session Admitted / Session Classified
+- Add Session -> Session Added / Session Classified
 - Reassess Session -> Session Classified
 - Revoke Session -> Session Revoked
 

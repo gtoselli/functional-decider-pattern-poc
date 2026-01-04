@@ -17,7 +17,7 @@ export function evolve(state: State, event: Event): State {
         ],
       };
 
-    case 'SESSION_ADMITTED':
+    case 'SESSION_ADDED':
       return {
         ...state,
         paths: state.paths.map((p) =>
@@ -33,7 +33,7 @@ export function evolve(state: State, event: Event): State {
         ),
       };
 
-    case 'SESSION_REVOKED':
+    case 'SESSION_REMOVED':
       return {
         ...state,
         paths: state.paths.map((p) =>

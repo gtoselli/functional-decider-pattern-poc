@@ -88,16 +88,16 @@ describe('clinicalDecider', () => {
     ).toThrow('Role not allowed for path');
   });
 
-  it('admit session', () => {
+  it('add session', () => {
     aggregate.run({ type: 'START_PATH', data: { pathType: 'psychotherapy' } });
     const pathId = aggregate.getState().paths[0].id;
 
     const events = aggregate.run({
-      type: 'ADMIT_SESSION',
+      type: 'ADD_SESSION',
       data: { id: 's1', startAt: new Date('2025-01-01'), pathId },
     });
     expect(events).toEqual([
-      { data: { id: 's1', startAt: new Date('2025-01-01'), pathId }, type: 'SESSION_ADMITTED' },
+      { data: { id: 's1', startAt: new Date('2025-01-01'), pathId }, type: 'SESSION_ADDED' },
       { data: { id: 's1', number: 1, startAt: new Date('2025-01-01'), pathId }, type: 'SESSION_CLASSIFIED' },
     ]);
     expect(aggregate.getState()).toEqual({
@@ -118,10 +118,10 @@ describe('clinicalDecider', () => {
     aggregate.run({ type: 'START_PATH', data: { pathType: 'psychotherapy' } });
     const pathId = aggregate.getState().paths[0].id;
 
-    aggregate.run({ type: 'ADMIT_SESSION', data: { id: 's1', startAt: new Date('2025-01-01'), pathId } });
+    aggregate.run({ type: 'ADD_SESSION', data: { id: 's1', startAt: new Date('2025-01-01'), pathId } });
 
-    const events = aggregate.run({ type: 'REVOKE_SESSION', data: { id: 's1' } });
-    expect(events).toEqual([{ data: { id: 's1', revokedAt: expect.any(Date), pathId }, type: 'SESSION_REVOKED' }]);
+    const events = aggregate.run({ type: 'REMOVE_SESSION', data: { id: 's1' } });
+    expect(events).toEqual([{ data: { id: 's1', revokedAt: expect.any(Date), pathId }, type: 'SESSION_REMOVED' }]);
     expect(aggregate.getState()).toEqual({
       paths: [
         {
@@ -140,8 +140,8 @@ describe('clinicalDecider', () => {
     aggregate.run({ type: 'START_PATH', data: { pathType: 'psychotherapy' } });
     const pathId = aggregate.getState().paths[0].id;
 
-    aggregate.run({ type: 'ADMIT_SESSION', data: { id: 's1', startAt: new Date('2025-01-01'), pathId } });
-    aggregate.run({ type: 'ADMIT_SESSION', data: { id: 's2', startAt: new Date('2025-01-03'), pathId } });
+    aggregate.run({ type: 'ADD_SESSION', data: { id: 's1', startAt: new Date('2025-01-01'), pathId } });
+    aggregate.run({ type: 'ADD_SESSION', data: { id: 's2', startAt: new Date('2025-01-03'), pathId } });
 
     const events = aggregate.run({ type: 'REASSESS_SESSION', data: { id: 's1', startAt: new Date('2025-01-02') } });
     expect(events).toEqual([
@@ -176,8 +176,8 @@ describe('clinicalDecider', () => {
     aggregate.run({ type: 'START_PATH', data: { pathType: 'psychotherapy' } });
     const pathId = aggregate.getState().paths[0].id;
 
-    aggregate.run({ type: 'ADMIT_SESSION', data: { id: 's1', startAt: new Date('2025-01-01'), pathId } });
-    aggregate.run({ type: 'ADMIT_SESSION', data: { id: 's2', startAt: new Date('2025-01-02'), pathId } });
+    aggregate.run({ type: 'ADD_SESSION', data: { id: 's1', startAt: new Date('2025-01-01'), pathId } });
+    aggregate.run({ type: 'ADD_SESSION', data: { id: 's2', startAt: new Date('2025-01-02'), pathId } });
 
     const events = aggregate.run({ type: 'REASSESS_SESSION', data: { id: 's1', startAt: new Date('2025-01-03') } });
     expect(events).toEqual([

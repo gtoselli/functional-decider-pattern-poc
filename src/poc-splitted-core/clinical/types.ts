@@ -13,8 +13,8 @@ export interface State {
   }[];
 }
 
-interface AdmitSessionCmd {
-  type: 'ADMIT_SESSION';
+interface AddSessionCmd {
+  type: 'ADD_SESSION';
   data: { id: string; startAt: Date; pathId: string };
 }
 
@@ -23,8 +23,8 @@ interface ReassessSessionCmd {
   data: { id: string; startAt: Date };
 }
 
-interface RevokeSessionCmd {
-  type: 'REVOKE_SESSION';
+interface RemoveSessionCmd {
+  type: 'REMOVE_SESSION';
   data: { id: string };
 }
 
@@ -38,10 +38,10 @@ interface StartPathCmd {
   data: { pathType: PathType };
 }
 
-export type Command = AdmitSessionCmd | ReassessSessionCmd | RevokeSessionCmd | AddProfessionalCmd | StartPathCmd;
+export type Command = AddSessionCmd | ReassessSessionCmd | RemoveSessionCmd | AddProfessionalCmd | StartPathCmd;
 
-interface SessionAdmittedEvent {
-  type: 'SESSION_ADMITTED';
+interface SessionAddedEvent {
+  type: 'SESSION_ADDED';
   data: { id: string; startAt: Date; pathId: string };
 }
 
@@ -50,8 +50,8 @@ interface SessionClassifiedEvent {
   data: { id: string; number: number; startAt: Date; pathId: string };
 }
 
-interface SessionRevokedEvent {
-  type: 'SESSION_REVOKED';
+interface SessionRemovedEvent {
+  type: 'SESSION_REMOVED';
   data: { id: string; revokedAt: Date; pathId: string };
 }
 
@@ -66,9 +66,9 @@ interface PathStartedEvent {
 }
 
 export type Event =
-  | SessionAdmittedEvent
+  | SessionAddedEvent
   | SessionClassifiedEvent
-  | SessionRevokedEvent
+  | SessionRemovedEvent
   | ProfessionalAddedEvent
   | PathStartedEvent;
 

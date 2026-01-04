@@ -8,7 +8,7 @@ export function decide(cmd: Command, state: State): Event[] {
       return [{ data: { startedAt: new Date(), id: randomUUID(), pathType: cmd.data.pathType }, type: 'PATH_STARTED' }];
     }
 
-    case 'ADMIT_SESSION': {
+    case 'ADD_SESSION': {
       const path = state.paths.find((p) => p.id);
       if (!path) throw new Error('Path not found');
 
@@ -17,10 +17,10 @@ export function decide(cmd: Command, state: State): Event[] {
         throw new Error('CANNOT_SCHEDULE_BEFORE_FIRST_SESSION');
 
       const sessionNumber = calculateNewSessionNumber(path, cmd.data.id, cmd.data.startAt);
-      assertCanAdmitSession(path, sessionNumber);
+      assertCanAddSession(path, sessionNumber);
 
       const events: Event[] = [
-        { data: { id: cmd.data.id, startAt: cmd.data.startAt, pathId: cmd.data.pathId }, type: 'SESSION_ADMITTED' },
+        { data: { id: cmd.data.id, startAt: cmd.data.startAt, pathId: cmd.data.pathId }, type: 'SESSION_ADDED' },
       ];
 
       const sessions = [
@@ -32,12 +32,12 @@ export function decide(cmd: Command, state: State): Event[] {
       return events;
     }
 
-    case 'REVOKE_SESSION': {
+    case 'REMOVE_SESSION': {
       const path = getPathBySessionId(state, cmd.data.id);
       getSessionById(path, cmd.data.id);
 
       const events: Event[] = [
-        { data: { id: cmd.data.id, revokedAt: new Date(), pathId: path.id }, type: 'SESSION_REVOKED' },
+        { data: { id: cmd.data.id, revokedAt: new Date(), pathId: path.id }, type: 'SESSION_REMOVED' },
       ];
 
       const remainingSessions = path.sessions
@@ -149,7 +149,7 @@ function professionalRoleIsAllowedForPath(role: ProfessionalRole, pathType: Path
   throw new Error('Unknown pathType');
 }
 
-function assertCanAdmitSession(path: State['paths'][0], sessionNumber: number) {
+function assertCanAddSession(path: State['paths'][0], sessionNumber: number) {
   if (path.type === 'psychotherapy') return;
   else if (path.type === 'wlm') {
     if (sessionNumber === 1) return;

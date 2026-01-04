@@ -5,11 +5,11 @@ import type { ProfessionalRole } from './types';
 
 export function createClinicalService(clinicalRepo: ReturnType<typeof createClinicalInMemRepo>) {
   return {
-    async admitSession(params: { patientId: string; startAt: Date; pathId: string }) {
+    async addSession(params: { patientId: string; startAt: Date; pathId: string }) {
       const clinical = await clinicalRepo.getById(params.patientId);
 
       const events = clinical.run({
-        type: 'ADMIT_SESSION',
+        type: 'ADD_SESSION',
         data: { startAt: params.startAt, id: randomUUID(), pathId: params.pathId },
       });
 
@@ -29,11 +29,11 @@ export function createClinicalService(clinicalRepo: ReturnType<typeof createClin
       return events;
     },
 
-    async revokeSession(params: { patientId: string; sessionId: string }) {
+    async removeSession(params: { patientId: string; sessionId: string }) {
       const clinical = await clinicalRepo.getById(params.patientId);
 
       const events = clinical.run({
-        type: 'REVOKE_SESSION',
+        type: 'REMOVE_SESSION',
         data: { id: params.sessionId },
       });
 

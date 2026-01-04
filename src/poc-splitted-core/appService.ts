@@ -50,18 +50,18 @@ export function createAppService(
       startAt: Date;
       pathId: string;
     }): Promise<{ sessionId: string }> {
-      const clinicalEvents = await clinicalService.admitSession({
+      const clinicalEvents = await clinicalService.addSession({
         patientId: params.patientId,
         pathId: params.pathId,
         startAt: params.startAt,
       });
-      const sessionAdmittedEvent = getEvent(clinicalEvents, 'SESSION_ADMITTED');
+      const sessionAddedEvent = getEvent(clinicalEvents, 'SESSION_ADDED');
       const sessionClassifiedEvents = getEvents(clinicalEvents, 'SESSION_CLASSIFIED');
 
       await bookingService.scheduleEvent({
         patientId: params.patientId,
         startAt: params.startAt,
-        eventId: sessionAdmittedEvent.data.id,
+        eventId: sessionAddedEvent.data.id,
       });
 
       await Promise.all(
@@ -74,7 +74,7 @@ export function createAppService(
         ),
       );
 
-      return { sessionId: sessionAdmittedEvent.data.id };
+      return { sessionId: sessionAddedEvent.data.id };
     },
     async rescheduleSession(params: { patientId: string; sessionId: string; startAt: Date }): Promise<void> {
       const clinicalEvents = await clinicalService.reassessSession({
@@ -96,12 +96,12 @@ export function createAppService(
       );
     },
     async cancelSession(params: { patientId: string; sessionId: string }): Promise<void> {
-      const clinicalEvents = await clinicalService.revokeSession({
+      const clinicalEvents = await clinicalService.removeSession({
         patientId: params.patientId,
         sessionId: params.sessionId,
       });
       const sessionClassifiedEvents = getEvents(clinicalEvents, 'SESSION_CLASSIFIED');
-      const sessionRevokedEvents = getEvents(clinicalEvents, 'SESSION_REVOKED');
+      const sessionRevokedEvents = getEvents(clinicalEvents, 'SESSION_REMOVED');
 
       await bookingService.cancelEvent({ eventId: params.sessionId });
 

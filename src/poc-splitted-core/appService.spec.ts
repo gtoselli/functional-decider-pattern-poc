@@ -66,7 +66,7 @@ describe('appService', () => {
       sessionId = res.sessionId;
     });
 
-    it('should admit and classify session in clinical context', async () => {
+    it('should add and classify session in clinical context', async () => {
       expect(await clinicalService.getPath(patientId, pathId)).toMatchObject({
         sessions: [
           {
