@@ -58,3 +58,5 @@ export function createEconomicsService(
     },
   };
 }
+
+export type EconomicsService = ReturnType<typeof createEconomicsService>;

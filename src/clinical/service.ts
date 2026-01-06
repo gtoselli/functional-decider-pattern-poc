@@ -86,3 +86,5 @@ export function createClinicalService(clinicalRepo: ReturnType<typeof createClin
     },
   };
 }
+
+export type ClinicalService = ReturnType<typeof createClinicalService>;

@@ -1,14 +1,14 @@
 import { getEvent, getEvents } from './@utils/events';
-import type { createBookingService } from './booking/service';
-import type { createClinicalService } from './clinical/service';
+import type { BookingService } from './booking/service';
+import type { ClinicalService } from './clinical/service';
 import type { ProfessionalRole } from './clinical/types';
-import type { createEconomicsService } from './economics/service';
+import type { EconomicsService } from './economics/service';
 import type { PathType } from './shared-types';
 
 export function createAppService(
-  economicsService: ReturnType<typeof createEconomicsService>,
-  clinicalService: ReturnType<typeof createClinicalService>,
-  bookingService: ReturnType<typeof createBookingService>,
+  economicsService: EconomicsService,
+  clinicalService: ClinicalService,
+  bookingService: BookingService,
 ) {
   return {
     async startPath(params: {

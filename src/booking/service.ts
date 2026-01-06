@@ -43,3 +43,5 @@ export function createBookingService(bookingRepo: ReturnType<typeof createBookin
     },
   };
 }
+
+export type BookingService = ReturnType<typeof createBookingService>;
