@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "format": "biome format --write && biome lint --write"
+    "format": "biome format --write && biome lint --write",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",
@@ -15,9 +16,5 @@
     "@types/node": "^24.10.0",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
-  },
-  "dependencies": {
-    "ioredis": "^5.8.2",
-    "neverthrow": "^8.2.0"
   }
 }

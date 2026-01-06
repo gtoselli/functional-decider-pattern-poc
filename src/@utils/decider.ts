@@ -19,27 +19,6 @@ export interface Command<
   data: CommandData;
 }
 
-export function createDeciderRunner<State, CommandType extends Command, EventType extends Event>(
-  decider: Decider<State, CommandType, EventType>,
-  initialState: State,
-) {
-  let currentState = initialState;
-
-  return {
-    getState() {
-      return currentState;
-    },
-    reset() {
-      currentState = initialState;
-    },
-    run(command: CommandType): EventType[] {
-      const events = decider.decide(command, currentState);
-      currentState = events.reduce(decider.evolve, currentState);
-      return events;
-    },
-  };
-}
-
 export function createDeciderAggregate<State, CommandType extends Command, EventType extends Event>(
   decider: Decider<State, CommandType, EventType>,
   initialState: State,
