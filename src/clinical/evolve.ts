@@ -48,16 +48,30 @@ export function evolve(state: State, event: Event): State {
         ),
       };
 
-    case 'SESSION_CLASSIFIED': {
+    case 'SESSION_MOVED':
       return {
         ...state,
         paths: state.paths.map((p) =>
           p.id === event.data.pathId
             ? {
                 ...p,
-                sessions: p.sessions.map((s) =>
-                  s.id === event.data.id ? { ...s, number: event.data.number, startAt: event.data.startAt } : s,
-                ),
+                sessions: p.sessions.map((s) => (s.id === event.data.id ? { ...s, startAt: event.data.startAt } : s)),
+              }
+            : p,
+        ),
+      };
+
+    case 'PATH_SEQUENCE_CHANGED': {
+      return {
+        ...state,
+        paths: state.paths.map((p) =>
+          p.id === event.data.id
+            ? {
+                ...p,
+                sessions: p.sessions.map((s) => {
+                  const sessionData = event.data.sessions.find((es) => es.id === s.id);
+                  return sessionData ? { ...s, number: sessionData.number } : s;
+                }),
               }
             : p,
         ),

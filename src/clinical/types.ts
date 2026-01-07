@@ -45,9 +45,14 @@ interface SessionAddedEvent {
   data: { id: string; startAt: Date; pathId: string };
 }
 
-interface SessionClassifiedEvent {
-  type: 'SESSION_CLASSIFIED';
-  data: { id: string; number: number; startAt: Date; pathId: string };
+interface PathSequenceChanged {
+  type: 'PATH_SEQUENCE_CHANGED';
+  data: { id: string; sessions: { number: number; id: string }[] };
+}
+
+interface SessionMovedEvent {
+  type: 'SESSION_MOVED';
+  data: { id: string; startAt: Date; pathId: string };
 }
 
 interface SessionRemovedEvent {
@@ -67,7 +72,8 @@ interface PathStartedEvent {
 
 export type Event =
   | SessionAddedEvent
-  | SessionClassifiedEvent
+  | PathSequenceChanged
+  | SessionMovedEvent
   | SessionRemovedEvent
   | ProfessionalAddedEvent
   | PathStartedEvent;

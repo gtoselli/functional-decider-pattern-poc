@@ -1,4 +1,4 @@
-import { getEvent, getEvents } from './@utils/events';
+import { getEvent } from './@utils/events';
 import type { BookingService } from './booking/service';
 import type { ClinicalService } from './clinical/service';
 import type { ProfessionalRole } from './clinical/types';
@@ -56,7 +56,7 @@ export function createAppService(
         startAt: params.startAt,
       });
       const sessionAddedEvent = getEvent(clinicalEvents, 'SESSION_ADDED');
-      const sessionClassifiedEvents = getEvents(clinicalEvents, 'SESSION_CLASSIFIED');
+      const pathSequenceChangedEvent = getEvent(clinicalEvents, 'PATH_SEQUENCE_CHANGED');
 
       await bookingService.scheduleEvent({
         patientId: params.patientId,
@@ -65,11 +65,11 @@ export function createAppService(
       });
 
       await Promise.all(
-        sessionClassifiedEvents.flatMap((sessionClassifiedEvent) =>
+        pathSequenceChangedEvent.data.sessions.flatMap((session) =>
           economicsService.placeSessionOrder({
             patientId: params.patientId,
-            sessionId: sessionClassifiedEvent.data.id,
-            sessionNumber: sessionClassifiedEvent.data.number,
+            sessionId: session.id,
+            sessionNumber: session.number,
           }),
         ),
       );
@@ -84,13 +84,13 @@ export function createAppService(
       });
       await bookingService.rescheduleEvent({ eventId: params.sessionId, startAt: params.startAt });
 
-      const sessionClassifiedEvents = getEvents(clinicalEvents, 'SESSION_CLASSIFIED');
+      const pathSequenceChangedEvent = getEvent(clinicalEvents, 'PATH_SEQUENCE_CHANGED');
       await Promise.all(
-        sessionClassifiedEvents.flatMap((sessionClassifiedEvent) =>
+        pathSequenceChangedEvent.data.sessions.flatMap((session) =>
           economicsService.placeSessionOrder({
             patientId: params.patientId,
-            sessionId: sessionClassifiedEvent.data.id,
-            sessionNumber: sessionClassifiedEvent.data.number,
+            sessionId: session.id,
+            sessionNumber: session.number,
           }),
         ),
       );
@@ -100,27 +100,25 @@ export function createAppService(
         patientId: params.patientId,
         sessionId: params.sessionId,
       });
-      const sessionClassifiedEvents = getEvents(clinicalEvents, 'SESSION_CLASSIFIED');
-      const sessionRevokedEvents = getEvents(clinicalEvents, 'SESSION_REMOVED');
+      const pathSequenceChangedEvent = getEvent(clinicalEvents, 'PATH_SEQUENCE_CHANGED');
+      const sessionRevokedEvent = getEvent(clinicalEvents, 'SESSION_REMOVED');
 
       await bookingService.cancelEvent({ eventId: params.sessionId });
 
       await Promise.all(
-        sessionClassifiedEvents.flatMap((sessionClassifiedEvent) =>
+        pathSequenceChangedEvent.data.sessions.flatMap((session) =>
           economicsService.placeSessionOrder({
             patientId: params.patientId,
-            sessionId: sessionClassifiedEvent.data.id,
-            sessionNumber: sessionClassifiedEvent.data.number,
+            sessionId: session.id,
+            sessionNumber: session.number,
           }),
         ),
       );
 
-      sessionRevokedEvents.flatMap((sessionRevokedEvent) =>
-        economicsService.voidSessionOrder({
-          patientId: params.patientId,
-          sessionId: sessionRevokedEvent.data.id,
-        }),
-      );
+      await economicsService.voidSessionOrder({
+        patientId: params.patientId,
+        sessionId: sessionRevokedEvent.data.id,
+      });
     },
     // async cancelPath(params: { patientId: string; pathId: string }): Promise<void> {},
 

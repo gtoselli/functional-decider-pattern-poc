@@ -24,8 +24,8 @@ export function decide(cmd: Command, state: State): Event[] {
       ];
 
       const sessions = [
-        ...path.sessions.map((s) => ({ id: s.id, startAt: s.startAt, oldNumber: s.number })),
-        { id: cmd.data.id, startAt: cmd.data.startAt, oldNumber: 0 },
+        ...path.sessions.map((s) => ({ id: s.id, startAt: s.startAt })),
+        { id: cmd.data.id, startAt: cmd.data.startAt },
       ];
       events.push(...classifySessions(sessions, path.id));
 
@@ -42,7 +42,7 @@ export function decide(cmd: Command, state: State): Event[] {
 
       const remainingSessions = path.sessions
         .filter((s) => s.id !== cmd.data.id)
-        .map((s) => ({ id: s.id, startAt: s.startAt, oldNumber: s.number }));
+        .map((s) => ({ id: s.id, startAt: s.startAt }));
 
       events.push(...classifySessions(remainingSessions, path.id));
 
@@ -53,13 +53,15 @@ export function decide(cmd: Command, state: State): Event[] {
       const path = getPathBySessionId(state, cmd.data.id);
       getSessionById(path, cmd.data.id);
 
-      const sessions = path.sessions.map((s) =>
-        s.id === cmd.data.id
-          ? { id: s.id, startAt: cmd.data.startAt, oldNumber: s.number, oldStartAt: s.startAt }
-          : { id: s.id, startAt: s.startAt, oldNumber: s.number, oldStartAt: s.startAt },
-      );
+      const sessions = path.sessions.map((s) => ({
+        id: s.id,
+        startAt: s.id === cmd.data.id ? cmd.data.startAt : s.startAt,
+      }));
 
-      return classifySessions(sessions, path.id);
+      return [
+        { data: { id: cmd.data.id, startAt: cmd.data.startAt, pathId: path.id }, type: 'SESSION_MOVED' },
+        ...classifySessions(sessions, path.id),
+      ];
     }
 
     case 'ADD_PROFESSIONAL': {
@@ -102,33 +104,20 @@ function calculateNewSessionNumber(path: State['paths'][0], newSessionId: string
   return calculateSessionNumbers(allSessions).find((s) => s.id === newSessionId)!.number;
 }
 
-function classifySessions(
-  sessions: { id: string; startAt: Date; oldNumber: number; oldStartAt?: Date }[],
-  pathId: string,
-): Event[] {
+function classifySessions(sessions: { id: string; startAt: Date }[], pathId: string): Event[] {
+  if (sessions.length === 0) return [];
+
   const numberedSessions = calculateSessionNumbers(sessions);
 
-  const events: Event[] = [];
-  numberedSessions.forEach((numbered) => {
-    // biome-ignore lint/style/noNonNullAssertion: not needeed
-    const session = sessions.find((s) => s.id === numbered.id)!;
-    const numberChanged = session.oldNumber !== numbered.number;
-    const startAtChanged = session.oldStartAt && session.startAt.getTime() !== session.oldStartAt.getTime();
-
-    if (numberChanged || startAtChanged) {
-      events.push({
-        type: 'SESSION_CLASSIFIED',
-        data: {
-          id: session.id,
-          number: numbered.number,
-          startAt: session.startAt,
-          pathId,
-        },
-      });
-    }
-  });
-
-  return events;
+  return [
+    {
+      type: 'PATH_SEQUENCE_CHANGED',
+      data: {
+        id: pathId,
+        sessions: numberedSessions.map(({ id, number }) => ({ id, number })),
+      },
+    },
+  ];
 }
 
 function getPathBySessionId(state: State, sessionId: string) {

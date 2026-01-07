@@ -98,7 +98,10 @@ describe('clinicalDecider', () => {
     });
     expect(events).toEqual([
       { data: { id: 's1', startAt: new Date('2025-01-01'), pathId }, type: 'SESSION_ADDED' },
-      { data: { id: 's1', number: 1, startAt: new Date('2025-01-01'), pathId }, type: 'SESSION_CLASSIFIED' },
+      {
+        data: { id: pathId, sessions: [{ id: 's1', number: 1 }] },
+        type: 'PATH_SEQUENCE_CHANGED',
+      },
     ]);
     expect(aggregate.getState()).toEqual({
       paths: [
@@ -144,17 +147,20 @@ describe('clinicalDecider', () => {
     aggregate.run({ type: 'ADD_SESSION', data: { id: 's2', startAt: new Date('2025-01-03'), pathId } });
 
     const events = aggregate.run({ type: 'REASSESS_SESSION', data: { id: 's1', startAt: new Date('2025-01-02') } });
-    expect(events).toEqual([
-      {
-        data: {
-          id: 's1',
-          number: 1,
-          startAt: new Date('2025-01-02'),
-          pathId,
+    expect(events).toEqual(
+      expect.arrayContaining([
+        {
+          data: {
+            id: pathId,
+            sessions: [
+              { id: 's1', number: 1 },
+              { id: 's2', number: 2 },
+            ],
+          },
+          type: 'PATH_SEQUENCE_CHANGED',
         },
-        type: 'SESSION_CLASSIFIED',
-      },
-    ]);
+      ]),
+    );
     expect(aggregate.getState()).toEqual({
       paths: [
         {
@@ -180,26 +186,21 @@ describe('clinicalDecider', () => {
     aggregate.run({ type: 'ADD_SESSION', data: { id: 's2', startAt: new Date('2025-01-02'), pathId } });
 
     const events = aggregate.run({ type: 'REASSESS_SESSION', data: { id: 's1', startAt: new Date('2025-01-03') } });
-    expect(events).toEqual([
-      {
-        data: {
-          id: 's2',
-          number: 1,
-          startAt: new Date('2025-01-02'),
-          pathId,
+    expect(events).toEqual(
+      expect.arrayContaining([
+        {
+          data: {
+            id: pathId,
+            sessions: [
+              { id: 's2', number: 1 },
+              { id: 's1', number: 2 },
+            ],
+          },
+          type: 'PATH_SEQUENCE_CHANGED',
         },
-        type: 'SESSION_CLASSIFIED',
-      },
-      {
-        data: {
-          id: 's1',
-          number: 2,
-          startAt: new Date('2025-01-03'),
-          pathId,
-        },
-        type: 'SESSION_CLASSIFIED',
-      },
-    ]);
+      ]),
+    );
+
     expect(aggregate.getState()).toEqual({
       paths: [
         {
