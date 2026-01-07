@@ -2,7 +2,7 @@ import { type Aggregate, createDeciderAggregate } from './@utils/decider';
 import { bookingDecider } from './booking';
 import type { BookingDecider, State as BookingState } from './booking/types';
 import { clinicalDecider } from './clinical';
-import type { ClinicalDecider } from './clinical/types';
+import type { ClinicalDecider, State } from './clinical/types';
 import { economicsDecider } from './economics/patientEconomics';
 import type { EconomicsDecider } from './economics/patientEconomics/types';
 import { sessionOrderDecider } from './economics/sessionOrder';
@@ -56,6 +56,19 @@ export function createClinicalInMemRepo() {
     },
     async getById(id: string) {
       return createDeciderAggregate(clinicalDecider, STATE[id] || { id, paths: [] });
+    },
+  };
+}
+
+export function createClinicalInMemRepo2() {
+  const STATE: Record<string, State> = {};
+
+  return {
+    async save(state: State) {
+      STATE[state.id] = state;
+    },
+    async getById(id: string) {
+      return STATE[id] || { id, paths: [] };
     },
   };
 }

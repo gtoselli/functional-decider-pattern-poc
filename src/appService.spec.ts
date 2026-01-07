@@ -6,13 +6,13 @@ import { createClinicalService } from './clinical/service';
 import { createEconomicsService } from './economics/service';
 import {
   createBookingInMemRepo,
-  createClinicalInMemRepo,
+  createClinicalInMemRepo2,
   createPatientEconomicsInMemRepo,
   createSessionOrderInMemRepo,
 } from './infra';
 
 describe('appService', () => {
-  const clinicalService = createClinicalService(createClinicalInMemRepo());
+  const clinicalService = createClinicalService(createClinicalInMemRepo2());
   const economicsService = createEconomicsService(createSessionOrderInMemRepo(), createPatientEconomicsInMemRepo());
   const bookingService = createBookingService(createBookingInMemRepo());
   const service = createAppService(economicsService, clinicalService, bookingService);
