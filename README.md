@@ -10,3 +10,9 @@ https://thinkbeforecoding.com/post/2021/12/17/functional-event-sourcing-decider
 https://event-driven.io/en/my_journey_from_aggregates/
 
 https://www.youtube.com/watch?v=72TOhMpEVlA
+
+
+
+Open points
+- [ ] Add convention reissue prices
+- [ ] Recurrent sessions 
