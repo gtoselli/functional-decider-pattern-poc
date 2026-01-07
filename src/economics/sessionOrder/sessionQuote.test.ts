@@ -16,7 +16,7 @@ describe('sessionOrderDecider', () => {
   it('place', () => {
     const events = aggregate.run({
       type: 'PLACE_SESSION_ORDER',
-      data: { cost: 4500, reason: 'standard', patientId },
+      data: { cost: 4500, reason: 'path_standard', patientId },
     });
 
     expect(events).toEqual([
@@ -26,7 +26,7 @@ describe('sessionOrderDecider', () => {
           id,
           patientId,
           placedAt: expect.any(Date),
-          reason: 'standard',
+          reason: 'path_standard',
         },
         type: 'SESSION_ORDER_PLACED',
       },
@@ -36,7 +36,7 @@ describe('sessionOrderDecider', () => {
       id,
       patientId,
       placedAt: expect.any(Date),
-      reason: 'standard',
+      reason: 'path_standard',
       voidedAt: null,
       status: 'quoted',
     });
@@ -45,7 +45,7 @@ describe('sessionOrderDecider', () => {
   it('release billable session', () => {
     aggregate.run({
       type: 'PLACE_SESSION_ORDER',
-      data: { cost: 4500, reason: 'standard', patientId },
+      data: { cost: 4500, reason: 'path_standard', patientId },
     });
 
     const events = aggregate.run({
@@ -66,7 +66,7 @@ describe('sessionOrderDecider', () => {
       id,
       patientId,
       placedAt: expect.any(Date),
-      reason: 'standard',
+      reason: 'path_standard',
       voidedAt: expect.any(Date),
       status: 'quoted',
     });

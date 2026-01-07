@@ -12,8 +12,11 @@ describe('patientEconomicsDecider', () => {
     aggregate.resetToInitialState();
   });
 
-  it('price session', () => {
-    const events = aggregate.run({ type: 'PRICE_SESSION', data: { sessionId: 's1', number: 1 } });
+  it('price session: psychotherapy', () => {
+    const events = aggregate.run({
+      type: 'PRICE_SESSION',
+      data: { sessionId: 's1', number: 1, pathType: 'psychotherapy' },
+    });
 
     expect(events).toEqual([
       {
@@ -29,19 +32,68 @@ describe('patientEconomicsDecider', () => {
   });
 
   it('price session: another price', () => {
-    aggregate.run({ type: 'PRICE_SESSION', data: { sessionId: 's1', number: 1 } });
-    const events = aggregate.run({ type: 'PRICE_SESSION', data: { sessionId: 's2', number: 2 } });
+    aggregate.run({ type: 'PRICE_SESSION', data: { sessionId: 's1', number: 1, pathType: 'psychotherapy' } });
+    const events = aggregate.run({
+      type: 'PRICE_SESSION',
+      data: { sessionId: 's2', number: 2, pathType: 'psychotherapy' },
+    });
 
     expect(events).toEqual([
       {
         data: {
           cost: 4500,
-          reason: 'standard',
+          reason: 'path_standard',
           id: 's2',
         },
         type: 'SESSION_PRICED',
       },
     ]);
     expect(aggregate.getState()).toEqual({ id });
+  });
+
+  it('price session: wlm', () => {
+    const events = aggregate.run({
+      type: 'PRICE_SESSION',
+      data: { sessionId: 's1', number: 1, pathType: 'wlm' },
+    });
+
+    expect(events).toEqual([
+      {
+        data: {
+          cost: 0,
+          reason: 'first_session',
+          id: 's1',
+        },
+        type: 'SESSION_PRICED',
+      },
+    ]);
+    expect(aggregate.getState()).toEqual({ id });
+  });
+
+  it('price session: another price: wlm', () => {
+    aggregate.run({ type: 'PRICE_SESSION', data: { sessionId: 's1', number: 1, pathType: 'wlm' } });
+    expect(() =>
+      aggregate.run({
+        type: 'PRICE_SESSION',
+        data: { sessionId: 's2', number: 2, pathType: 'wlm' },
+      }),
+    ).toThrowError('Active subscription not found');
+
+    aggregate.run({ type: 'SET_SUBSCRIPTION_STATUS', data: { status: 'active' } });
+
+    const events = aggregate.run({
+      type: 'PRICE_SESSION',
+      data: { sessionId: 's2', number: 2, pathType: 'wlm' },
+    });
+    expect(events).toEqual([
+      {
+        data: {
+          cost: 0,
+          reason: 'subscription',
+          id: 's2',
+        },
+        type: 'SESSION_PRICED',
+      },
+    ]);
   });
 });

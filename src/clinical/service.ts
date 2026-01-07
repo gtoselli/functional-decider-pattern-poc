@@ -91,7 +91,7 @@ export function createClinicalService(clinicalRepo: ReturnType<typeof createClin
     },
 
     async getPath(patientId: string, pathId: string) {
-      return (await clinicalRepo.getById(patientId)).paths.find((p) => p.id === pathId);
+      return (await clinicalRepo.getById(patientId)).paths.find((p) => p.id === pathId)!;
     },
 
     async getPaths(patientId: string) {

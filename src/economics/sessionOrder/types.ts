@@ -1,4 +1,5 @@
 import type { Decider } from '../../@utils/decider';
+import type { CostReason } from '../patientEconomics/types';
 
 export type State = { id: string } & (
   | {
@@ -9,14 +10,14 @@ export type State = { id: string } & (
       patientId: string;
       placedAt: Date;
       cost: number;
-      reason: 'standard' | 'first_session';
+      reason: CostReason;
       voidedAt: Date | null;
     }
 );
 
 interface PlaceSessionOrderCmd {
   type: 'PLACE_SESSION_ORDER';
-  data: { cost: number; reason: 'first_session' | 'standard'; patientId: string };
+  data: { cost: number; reason: CostReason; patientId: string };
 }
 
 interface VoidSessionOrderCmd {
@@ -28,7 +29,7 @@ export type Command = PlaceSessionOrderCmd | VoidSessionOrderCmd;
 
 interface SessionOrderPlacedEvent {
   type: 'SESSION_ORDER_PLACED';
-  data: { id: string; patientId: string; placedAt: Date; cost: number; reason: 'first_session' | 'standard' };
+  data: { id: string; patientId: string; placedAt: Date; cost: number; reason: CostReason };
 }
 
 interface SessionOrderVoidedEvent {

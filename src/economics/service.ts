@@ -1,18 +1,24 @@
 import { getEvent } from '../@utils/events';
 import type { createPatientEconomicsInMemRepo, createSessionOrderInMemRepo } from '../infra';
+import type { PathType } from '../shared-types';
 
 export function createEconomicsService(
   sessionOrderRepo: ReturnType<typeof createSessionOrderInMemRepo>,
   patientEconomicsRepo: ReturnType<typeof createPatientEconomicsInMemRepo>,
 ) {
   return {
-    async placeSessionOrder(params: { patientId: string; sessionId: string; sessionNumber: number }) {
+    async placeSessionOrder(params: {
+      patientId: string;
+      sessionId: string;
+      sessionNumber: number;
+      pathType: PathType;
+    }) {
       const patientEconomics = await patientEconomicsRepo.getById(params.patientId);
       const sessionOrder = await sessionOrderRepo.getById(params.sessionId);
 
       const patientEconomicsEvents = patientEconomics.run({
         type: 'PRICE_SESSION',
-        data: { sessionId: params.sessionId, number: params.sessionNumber },
+        data: { sessionId: params.sessionId, number: params.sessionNumber, pathType: params.pathType },
       });
       const sessionPricedEvent = getEvent(patientEconomicsEvents, 'SESSION_PRICED');
 

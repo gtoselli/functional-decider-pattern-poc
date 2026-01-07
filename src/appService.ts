@@ -64,12 +64,14 @@ export function createAppService(
         eventId: sessionAddedEvent.data.id,
       });
 
+      const path = await clinicalService.getPath(params.patientId, pathSequenceChangedEvent.data.id);
       await Promise.all(
         pathSequenceChangedEvent.data.sessions.flatMap((session) =>
           economicsService.placeSessionOrder({
             patientId: params.patientId,
             sessionId: session.id,
             sessionNumber: session.number,
+            pathType: path.type,
           }),
         ),
       );
@@ -85,12 +87,14 @@ export function createAppService(
       await bookingService.rescheduleEvent({ eventId: params.sessionId, startAt: params.startAt });
 
       const pathSequenceChangedEvent = getEvent(clinicalEvents, 'PATH_SEQUENCE_CHANGED');
+      const path = await clinicalService.getPath(params.patientId, pathSequenceChangedEvent.data.id);
       await Promise.all(
         pathSequenceChangedEvent.data.sessions.flatMap((session) =>
           economicsService.placeSessionOrder({
             patientId: params.patientId,
             sessionId: session.id,
             sessionNumber: session.number,
+            pathType: path.type,
           }),
         ),
       );
@@ -105,12 +109,14 @@ export function createAppService(
 
       await bookingService.cancelEvent({ eventId: params.sessionId });
 
+      const path = await clinicalService.getPath(params.patientId, pathSequenceChangedEvent.data.id);
       await Promise.all(
         pathSequenceChangedEvent.data.sessions.flatMap((session) =>
           economicsService.placeSessionOrder({
             patientId: params.patientId,
             sessionId: session.id,
             sessionNumber: session.number,
+            pathType: path.type,
           }),
         ),
       );

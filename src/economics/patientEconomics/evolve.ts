@@ -7,6 +7,8 @@ export function evolve(state: State, event: Event): State {
     }
     case 'SESSION_PRICE_VOIDED':
       return state;
+    case 'SUBSCRIPTION_STATUS_SET':
+      return { ...state, subscription: { status: event.data.status } };
     default: {
       const _exhaustive: never = event;
       return _exhaustive;
