@@ -1,59 +1,73 @@
 import { randomUUID } from 'node:crypto';
 import type { createBookingInMemRepo } from '../infra';
+import { decide } from './decide';
+import { evolve } from './evolve';
 
-export function createBookingService(bookingRepo: ReturnType<typeof createBookingInMemRepo>) {
+export function createBookingService(repo: ReturnType<typeof createBookingInMemRepo>) {
   return {
     async scheduleEvent(params: { patientId: string; startAt: Date }) {
       const eventId = randomUUID();
-      const event = await bookingRepo.getById(eventId);
+      const state = await repo.getById(eventId);
 
-      const events = event.run({
-        type: 'SCHEDULE_EVENT',
-        data: { startAt: params.startAt, patientId: params.patientId },
-      });
+      const events = decide(
+        {
+          type: 'SCHEDULE_EVENT',
+          data: { startAt: params.startAt, patientId: params.patientId },
+        },
+        state,
+      );
 
-      await bookingRepo.save(event);
+      await repo.save(events.reduce(evolve, state));
       return events;
     },
 
     async rescheduleEvent(params: { eventId: string; startAt: Date }) {
-      const event = await bookingRepo.getById(params.eventId);
+      const state = await repo.getById(params.eventId);
 
-      const events = event.run({
-        type: 'RESCHEDULE_EVENT',
-        data: { startAt: params.startAt },
-      });
+      const events = decide(
+        {
+          type: 'RESCHEDULE_EVENT',
+          data: { startAt: params.startAt },
+        },
+        state,
+      );
 
-      await bookingRepo.save(event);
+      await repo.save(events.reduce(evolve, state));
       return events;
     },
 
     async cancelEvent(params: { eventId: string }) {
-      const event = await bookingRepo.getById(params.eventId);
+      const state = await repo.getById(params.eventId);
 
-      const events = event.run({
-        type: 'CANCEL_EVENT',
-        data: {},
-      });
+      const events = decide(
+        {
+          type: 'CANCEL_EVENT',
+          data: {},
+        },
+        state,
+      );
 
-      await bookingRepo.save(event);
+      await repo.save(events.reduce(evolve, state));
       return events;
     },
 
     async markEventAsNoShow(params: { eventId: string }) {
-      const event = await bookingRepo.getById(params.eventId);
+      const state = await repo.getById(params.eventId);
 
-      const events = event.run({
-        type: 'MARK_AS_NO_SHOW',
-        data: {},
-      });
+      const events = decide(
+        {
+          type: 'MARK_AS_NO_SHOW',
+          data: {},
+        },
+        state,
+      );
 
-      await bookingRepo.save(event);
+      await repo.save(events.reduce(evolve, state));
       return events;
     },
 
     async getEvent(eventId: string) {
-      return (await bookingRepo.getById(eventId)).getState();
+      return await repo.getById(eventId);
     },
   };
 }

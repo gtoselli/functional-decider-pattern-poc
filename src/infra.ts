@@ -1,30 +1,25 @@
-import { type Aggregate, createDeciderAggregate } from './@utils/decider';
-import { bookingDecider } from './booking';
-import type { BookingDecider, State as BookingState } from './booking/types';
-import type { ClinicalDecider, State } from './clinical/types';
-import type { State as PatientEconomics2State } from './economics/types';
-
-type BookingAggregate = Aggregate<BookingDecider>;
+import type { State as BookingState } from './booking/types';
+import type { State as PatientClinicalState } from './clinical/types';
+import type { State as PatientEconomicsState } from './economics/types';
 
 export function createBookingInMemRepo() {
-  const STATE = new Map<string, BookingState>();
+  const STATE: Record<string, BookingState> = {};
 
   return {
-    async save(aggregate: BookingAggregate) {
-      STATE.set(aggregate.getState().id, aggregate.getState());
+    async save(state: BookingState) {
+      STATE[state.id] = state;
     },
     async getById(id: string) {
-      const state = STATE.get(id);
-      return createDeciderAggregate(bookingDecider, state || { id, status: 'initial' as const });
+      return STATE[id] || { id, status: 'initial' as const };
     },
   };
 }
 
 export function createClinicalInMemRepo() {
-  const STATE: Record<string, State> = {};
+  const STATE: Record<string, PatientClinicalState> = {};
 
   return {
-    async save(state: State) {
+    async save(state: PatientClinicalState) {
       STATE[state.id] = state;
     },
     async getById(id: string) {
@@ -34,13 +29,13 @@ export function createClinicalInMemRepo() {
 }
 
 export function createPatientEconomics2InMemRepo() {
-  const STATE: Record<string, PatientEconomics2State> = {};
+  const STATE: Record<string, PatientEconomicsState> = {};
 
   return {
-    async save(state: PatientEconomics2State): Promise<void> {
+    async save(state: PatientEconomicsState): Promise<void> {
       STATE[state.id] = state;
     },
-    async getById(id: string): Promise<PatientEconomics2State> {
+    async getById(id: string): Promise<PatientEconomicsState> {
       return STATE[id] || { id, prices: [], coverages: [] };
     },
   };

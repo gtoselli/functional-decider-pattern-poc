@@ -1,4 +1,3 @@
-import type { Decider } from '../@utils/decider';
 import type { PathType } from '../shared-types';
 
 export interface State {
@@ -83,8 +82,6 @@ export type Event =
   | SessionRemovedEvent
   | ProfessionalAddedEvent
   | PathStartedEvent;
-
-export type ClinicalDecider = Decider<State, Command, Event>;
 
 export type ProfessionalRole = 'professional' | 'dietitian' | 'nutritionist';
 

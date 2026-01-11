@@ -1,5 +1,3 @@
-import type { Decider } from '../@utils/decider';
-
 export type State = { id: string } & (
   | {
       status: 'scheduled';
@@ -60,7 +58,5 @@ interface EventMarkedAsNoShowEvent {
   data: { markedAsNoShowAt: Date };
 }
 export type Event = EventScheduledEvent | EventRescheduledEvent | EventCancelledEvent | EventMarkedAsNoShowEvent;
-
-export type BookingDecider = Decider<State, Command, Event>;
 
 type CancellationType = 'late' | 'normal';

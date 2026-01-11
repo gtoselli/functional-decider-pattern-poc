@@ -1,19 +1,14 @@
-import { beforeEach, describe, expect, it } from 'vitest';
-import { createDeciderAggregate } from '../@utils/decider';
-import { clinicalDecider } from './index';
+import { describe, expect, it } from 'vitest';
+import { decide } from './decide';
+import { evolve } from './evolve';
 import type { State } from './types';
 
 describe('clinicalDecider', () => {
   const id = 'foo-patient-id';
   const INITIAL_STATE = { id, paths: [] } satisfies State;
-  const aggregate = createDeciderAggregate(clinicalDecider, INITIAL_STATE);
-
-  beforeEach(() => {
-    aggregate.resetToInitialState();
-  });
 
   it('start path', () => {
-    const events = aggregate.run({ type: 'START_PATH', data: { pathType: 'psychotherapy' } });
+    const events = decide({ type: 'START_PATH', data: { pathType: 'psychotherapy' } }, INITIAL_STATE);
     expect(events).toEqual([
       {
         data: {
@@ -27,13 +22,18 @@ describe('clinicalDecider', () => {
   });
 
   it('add professional', () => {
-    aggregate.run({ type: 'START_PATH', data: { pathType: 'psychotherapy' } });
-    const path = aggregate.getState().paths[0];
+    let state: State = INITIAL_STATE;
+    state = decide({ type: 'START_PATH', data: { pathType: 'psychotherapy' } }, state).reduce(evolve, state);
+    const path = state.paths[0];
 
-    const events = aggregate.run({
-      type: 'ADD_PROFESSIONAL',
-      data: { professionalId: 'pro-id', pathId: path.id, role: 'professional' },
-    });
+    const events = decide(
+      {
+        type: 'ADD_PROFESSIONAL',
+        data: { professionalId: 'pro-id', pathId: path.id, role: 'professional' },
+      },
+      state,
+    );
+    state = events.reduce(evolve, state);
     expect(events).toEqual([
       {
         data: {
@@ -45,7 +45,7 @@ describe('clinicalDecider', () => {
         type: 'PROFESSIONAL_ADDED',
       },
     ]);
-    expect(aggregate.getState()).toEqual({
+    expect(state).toEqual({
       id,
       paths: [
         {
@@ -65,37 +65,51 @@ describe('clinicalDecider', () => {
     });
 
     expect(() =>
-      aggregate.run({
-        type: 'ADD_PROFESSIONAL',
-        data: { professionalId: 'pro-id', pathId: path.id, role: 'professional' },
-      }),
+      decide(
+        {
+          type: 'ADD_PROFESSIONAL',
+          data: { professionalId: 'pro-id', pathId: path.id, role: 'professional' },
+        },
+        state,
+      ),
     ).toThrow('Professional already in the path');
 
     expect(() =>
-      aggregate.run({
-        type: 'ADD_PROFESSIONAL',
-        data: { professionalId: 'pro-id-1', pathId: path.id, role: 'professional' },
-      }),
+      decide(
+        {
+          type: 'ADD_PROFESSIONAL',
+          data: { professionalId: 'pro-id-1', pathId: path.id, role: 'professional' },
+        },
+        state,
+      ),
     ).toThrow('Professional role already in the path');
 
-    aggregate.run({ type: 'START_PATH', data: { pathType: 'wlm' } });
-    const wlmPath = aggregate.getState().paths[1];
+    state = decide({ type: 'START_PATH', data: { pathType: 'wlm' } }, state).reduce(evolve, state);
+
+    const wlmPath = state.paths[1];
     expect(() =>
-      aggregate.run({
-        type: 'ADD_PROFESSIONAL',
-        data: { professionalId: 'pro-id', pathId: wlmPath.id, role: 'professional' },
-      }),
+      decide(
+        {
+          type: 'ADD_PROFESSIONAL',
+          data: { professionalId: 'pro-id', pathId: wlmPath.id, role: 'professional' },
+        },
+        state,
+      ),
     ).toThrow('Role not allowed for path');
   });
 
   it('add session', () => {
-    aggregate.run({ type: 'START_PATH', data: { pathType: 'psychotherapy' } });
-    const pathId = aggregate.getState().paths[0].id;
+    let state: State = INITIAL_STATE;
+    state = decide({ type: 'START_PATH', data: { pathType: 'psychotherapy' } }, state).reduce(evolve, state);
+    const pathId = state.paths[0].id;
 
-    const events = aggregate.run({
-      type: 'ADD_SESSION',
-      data: { id: 's1', startAt: new Date('2025-01-01'), pathId },
-    });
+    const events = decide(
+      {
+        type: 'ADD_SESSION',
+        data: { id: 's1', startAt: new Date('2025-01-01'), pathId },
+      },
+      state,
+    );
     expect(events).toEqual([
       { data: { id: 's1', startAt: new Date('2025-01-01'), pathId }, type: 'SESSION_ADDED' },
       {
@@ -103,7 +117,7 @@ describe('clinicalDecider', () => {
         type: 'PATH_SEQUENCE_CHANGED',
       },
     ]);
-    expect(aggregate.getState()).toEqual({
+    expect(events.reduce(evolve, state)).toEqual({
       paths: [
         {
           id: pathId,
@@ -117,17 +131,21 @@ describe('clinicalDecider', () => {
     });
   });
 
-  it('revoke session', () => {
-    aggregate.run({ type: 'START_PATH', data: { pathType: 'psychotherapy' } });
-    const pathId = aggregate.getState().paths[0].id;
+  it('remove session', () => {
+    let state: State = INITIAL_STATE;
+    state = decide({ type: 'START_PATH', data: { pathType: 'psychotherapy' } }, state).reduce(evolve, state);
+    const pathId = state.paths[0].id;
 
-    aggregate.run({ type: 'ADD_SESSION', data: { id: 's1', startAt: new Date('2025-01-01'), pathId } });
+    state = decide({ type: 'ADD_SESSION', data: { id: 's1', startAt: new Date('2025-01-01'), pathId } }, state).reduce(
+      evolve,
+      state,
+    );
 
-    const events = aggregate.run({ type: 'REMOVE_SESSION', data: { id: 's1', reason: 'cancelled' } });
+    const events = decide({ type: 'REMOVE_SESSION', data: { id: 's1', reason: 'cancelled' } }, state);
     expect(events).toEqual([
       { data: { id: 's1', removedAt: expect.any(Date), pathId, reason: 'cancelled' }, type: 'SESSION_REMOVED' },
     ]);
-    expect(aggregate.getState()).toEqual({
+    expect(events.reduce(evolve, state)).toEqual({
       paths: [
         {
           id: pathId,
@@ -150,13 +168,20 @@ describe('clinicalDecider', () => {
   });
 
   it('reassess session: same sequence', () => {
-    aggregate.run({ type: 'START_PATH', data: { pathType: 'psychotherapy' } });
-    const pathId = aggregate.getState().paths[0].id;
+    let state: State = INITIAL_STATE;
+    state = decide({ type: 'START_PATH', data: { pathType: 'psychotherapy' } }, state).reduce(evolve, state);
+    const pathId = state.paths[0].id;
 
-    aggregate.run({ type: 'ADD_SESSION', data: { id: 's1', startAt: new Date('2025-01-01'), pathId } });
-    aggregate.run({ type: 'ADD_SESSION', data: { id: 's2', startAt: new Date('2025-01-03'), pathId } });
+    state = decide({ type: 'ADD_SESSION', data: { id: 's1', startAt: new Date('2025-01-01'), pathId } }, state).reduce(
+      evolve,
+      state,
+    );
+    state = decide({ type: 'ADD_SESSION', data: { id: 's2', startAt: new Date('2025-01-03'), pathId } }, state).reduce(
+      evolve,
+      state,
+    );
 
-    const events = aggregate.run({ type: 'REASSESS_SESSION', data: { id: 's1', startAt: new Date('2025-01-02') } });
+    const events = decide({ type: 'REASSESS_SESSION', data: { id: 's1', startAt: new Date('2025-01-02') } }, state);
     expect(events).toEqual(
       expect.arrayContaining([
         {
@@ -171,7 +196,7 @@ describe('clinicalDecider', () => {
         },
       ]),
     );
-    expect(aggregate.getState()).toEqual({
+    expect(events.reduce(evolve, state)).toEqual({
       paths: [
         {
           id: pathId,
@@ -189,13 +214,20 @@ describe('clinicalDecider', () => {
   });
 
   it('reassess session: sequence change', () => {
-    aggregate.run({ type: 'START_PATH', data: { pathType: 'psychotherapy' } });
-    const pathId = aggregate.getState().paths[0].id;
+    let state: State = INITIAL_STATE;
+    state = decide({ type: 'START_PATH', data: { pathType: 'psychotherapy' } }, state).reduce(evolve, state);
+    const pathId = state.paths[0].id;
 
-    aggregate.run({ type: 'ADD_SESSION', data: { id: 's1', startAt: new Date('2025-01-01'), pathId } });
-    aggregate.run({ type: 'ADD_SESSION', data: { id: 's2', startAt: new Date('2025-01-02'), pathId } });
+    state = decide({ type: 'ADD_SESSION', data: { id: 's1', startAt: new Date('2025-01-01'), pathId } }, state).reduce(
+      evolve,
+      state,
+    );
+    state = decide({ type: 'ADD_SESSION', data: { id: 's2', startAt: new Date('2025-01-02'), pathId } }, state).reduce(
+      evolve,
+      state,
+    );
 
-    const events = aggregate.run({ type: 'REASSESS_SESSION', data: { id: 's1', startAt: new Date('2025-01-03') } });
+    const events = decide({ type: 'REASSESS_SESSION', data: { id: 's1', startAt: new Date('2025-01-03') } }, state);
     expect(events).toEqual(
       expect.arrayContaining([
         {
@@ -211,7 +243,7 @@ describe('clinicalDecider', () => {
       ]),
     );
 
-    expect(aggregate.getState()).toEqual({
+    expect(events.reduce(evolve, state)).toEqual({
       paths: [
         {
           id: pathId,

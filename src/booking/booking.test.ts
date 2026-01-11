@@ -1,21 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { createDeciderAggregate } from '../@utils/decider';
-import { bookingDecider } from './index';
+import { decide } from './decide';
+import { evolve } from './evolve';
 import type { State } from './types';
 
 describe('bookingDecider', () => {
   const id = 'event-id';
   const patientId = 'foo-patient-id';
   const INITIAL_STATE = { id, status: 'initial' } satisfies State;
-  const aggregate = createDeciderAggregate(bookingDecider, INITIAL_STATE);
 
   beforeEach(() => {
     vi.setSystemTime(new Date('2000-06-01'));
-    aggregate.resetToInitialState();
   });
 
   it('schedule event', () => {
-    const events = aggregate.run({ type: 'SCHEDULE_EVENT', data: { startAt: new Date('2000-07-01'), patientId } });
+    const state = INITIAL_STATE;
+    const events = decide({ type: 'SCHEDULE_EVENT', data: { startAt: new Date('2000-07-01'), patientId } }, state);
 
     expect(events).toEqual([
       {
@@ -28,7 +27,7 @@ describe('bookingDecider', () => {
         type: 'EVENT_SCHEDULED',
       },
     ]);
-    expect(aggregate.getState()).toEqual({
+    expect(events.reduce(evolve, state)).toEqual({
       outcome: null,
       startAt: new Date('2000-07-01'),
       id,
@@ -40,12 +39,20 @@ describe('bookingDecider', () => {
 
   it('rescheduled event', () => {
     const originalStartAt = new Date('2000-07-01');
-    aggregate.run({ type: 'SCHEDULE_EVENT', data: { startAt: originalStartAt, patientId } });
+    let state: State = INITIAL_STATE;
 
-    const events = aggregate.run({
-      type: 'RESCHEDULE_EVENT',
-      data: { startAt: new Date('2000-07-02') },
-    });
+    state = decide({ type: 'SCHEDULE_EVENT', data: { startAt: originalStartAt, patientId } }, state).reduce(
+      evolve,
+      state,
+    );
+
+    const events = decide(
+      {
+        type: 'RESCHEDULE_EVENT',
+        data: { startAt: new Date('2000-07-02') },
+      },
+      state,
+    );
 
     expect(events).toEqual([
       {
@@ -55,7 +62,7 @@ describe('bookingDecider', () => {
         type: 'EVENT_RESCHEDULED',
       },
     ]);
-    expect(aggregate.getState()).toEqual({
+    expect(events.reduce(evolve, state)).toEqual({
       outcome: null,
       patientId,
       startAt: new Date('2000-07-02'),
@@ -66,12 +73,19 @@ describe('bookingDecider', () => {
   });
 
   it('cancel event', () => {
-    aggregate.run({ type: 'SCHEDULE_EVENT', data: { startAt: new Date('2000-07-01'), patientId } });
+    let state: State = INITIAL_STATE;
+    state = decide({ type: 'SCHEDULE_EVENT', data: { startAt: new Date('2000-07-01'), patientId } }, state).reduce(
+      evolve,
+      state,
+    );
 
-    const events = aggregate.run({
-      type: 'CANCEL_EVENT',
-      data: {},
-    });
+    const events = decide(
+      {
+        type: 'CANCEL_EVENT',
+        data: {},
+      },
+      state,
+    );
 
     expect(events).toEqual([
       {
@@ -79,7 +93,7 @@ describe('bookingDecider', () => {
         type: 'EVENT_CANCELLED',
       },
     ]);
-    expect(aggregate.getState()).toEqual({
+    expect(events.reduce(evolve, state)).toEqual({
       outcome: {
         type: 'cancelled',
         cancelledAt: expect.any(Date),
