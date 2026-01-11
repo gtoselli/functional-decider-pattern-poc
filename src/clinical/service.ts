@@ -7,12 +7,12 @@ import type { ProfessionalRole } from './types';
 
 export function createClinicalService(clinicalRepo: ReturnType<typeof createClinicalInMemRepo>) {
   return {
-    async addSession(params: { patientId: string; startAt: Date; pathId: string }) {
+    async addSession(params: { patientId: string; startAt: Date; pathId: string; eventId: string }) {
       const state = await clinicalRepo.getById(params.patientId);
       const events = decide(
         {
           type: 'ADD_SESSION',
-          data: { startAt: params.startAt, id: randomUUID(), pathId: params.pathId },
+          data: { startAt: params.startAt, id: params.eventId, pathId: params.pathId },
         },
         state,
       );

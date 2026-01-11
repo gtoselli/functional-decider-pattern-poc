@@ -31,4 +31,4 @@ export function createEconomicsService(
   };
 }
 
-export type EconomicsService = ReturnType<typeof createEconomicsService>;
+export type EconomicsService2 = ReturnType<typeof createEconomicsService>;

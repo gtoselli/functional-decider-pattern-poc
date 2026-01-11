@@ -2,11 +2,11 @@ import { getEvent } from './@utils/events';
 import type { BookingService } from './booking/service';
 import type { ClinicalService } from './clinical/service';
 import type { ProfessionalRole } from './clinical/types';
-import type { EconomicsService2 } from './economics/service';
+import type { EconomicsService } from './economics/service';
 import type { PathType } from './shared-types';
 
 export function createAppService(
-  economicsService: EconomicsService2,
+  economicsService: EconomicsService,
   clinicalService: ClinicalService,
   bookingService: BookingService,
 ) {
@@ -50,34 +50,36 @@ export function createAppService(
       startAt: Date;
       pathId: string;
     }): Promise<{ sessionId: string }> {
+      const bookingEvents = await bookingService.scheduleEvent({
+        patientId: params.patientId,
+        startAt: params.startAt,
+      });
+      const eventScheduledEvent = getEvent(bookingEvents, 'EVENT_SCHEDULED');
+
       const clinicalEvents = await clinicalService.addSession({
         patientId: params.patientId,
         pathId: params.pathId,
         startAt: params.startAt,
+        eventId: eventScheduledEvent.data.id,
       });
-      const sessionAddedEvent = getEvent(clinicalEvents, 'SESSION_ADDED');
-      const pathSequenceChangedEvent = getEvent(clinicalEvents, 'PATH_SEQUENCE_CHANGED');
 
-      await bookingService.scheduleEvent({
-        patientId: params.patientId,
-        startAt: params.startAt,
-        eventId: sessionAddedEvent.data.id,
-      });
+      const pathSequenceChangedEvent = getEvent(clinicalEvents, 'PATH_SEQUENCE_CHANGED');
 
       await economicsService.refreshPathEstimates({
         patientId: params.patientId,
         pathId: pathSequenceChangedEvent.data.id,
       });
 
-      return { sessionId: sessionAddedEvent.data.id };
+      return { sessionId: eventScheduledEvent.data.id };
     },
     async rescheduleSession(params: { patientId: string; sessionId: string; startAt: Date }): Promise<void> {
+      await bookingService.rescheduleEvent({ eventId: params.sessionId, startAt: params.startAt });
+
       const clinicalEvents = await clinicalService.reassessSession({
         patientId: params.patientId,
         startAt: params.startAt,
         sessionId: params.sessionId,
       });
-      await bookingService.rescheduleEvent({ eventId: params.sessionId, startAt: params.startAt });
 
       const pathSequenceChangedEvent = getEvent(clinicalEvents, 'PATH_SEQUENCE_CHANGED');
       await economicsService.refreshPathEstimates({
@@ -86,13 +88,13 @@ export function createAppService(
       });
     },
     async cancelSession(params: { patientId: string; sessionId: string }): Promise<void> {
+      await bookingService.cancelEvent({ eventId: params.sessionId });
+
       const clinicalEvents = await clinicalService.removeSession({
         patientId: params.patientId,
         sessionId: params.sessionId,
       });
       const pathSequenceChangedEvent = getEvent(clinicalEvents, 'PATH_SEQUENCE_CHANGED');
-
-      await bookingService.cancelEvent({ eventId: params.sessionId });
 
       await economicsService.refreshPathEstimates({
         patientId: params.patientId,
