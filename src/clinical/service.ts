@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import type { createClinicalInMemRepo } from '../infra';
 import type { PathType } from '../shared-types';
 import { decide } from './decide';
@@ -109,7 +108,7 @@ export function createClinicalService(clinicalRepo: ReturnType<typeof createClin
           number: s.number,
           startAt: s.startAt,
           pathType: p.type,
-          status: s.revokedAt ? 'removed' : 'active',
+          status: s.revokedAt ? ('removed' as const) : ('active' as const),
         })),
       );
     },

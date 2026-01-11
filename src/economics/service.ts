@@ -8,12 +8,11 @@ export function createEconomicsService(
   clinicalService: ClinicalService,
 ) {
   return {
-    async refreshPathEstimates(params: { patientId: string; pathId: string }) {
+    async revisePatientEstimates(params: { patientId: string }) {
       const state = await patientEconomicsRepo.getById(params.patientId);
       const sessions = await clinicalService.getSessions(params.patientId);
 
       const events = decide({ type: 'REVISE_ESTIMATES', data: { sessions } }, state);
-
       await patientEconomicsRepo.save(events.reduce(evolve, state));
 
       return events;
@@ -31,4 +30,4 @@ export function createEconomicsService(
   };
 }
 
-export type EconomicsService2 = ReturnType<typeof createEconomicsService>;
+export type EconomicsService = ReturnType<typeof createEconomicsService>;

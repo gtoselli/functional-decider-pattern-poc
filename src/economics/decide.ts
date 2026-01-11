@@ -1,56 +1,51 @@
-import type { Command, Event, State } from './types';
+import type { Command, Event, PriceReason, State } from './types';
 
 export function decide(cmd: Command, state: State): Event[] {
   switch (cmd.type) {
     case 'REVISE_ESTIMATES': {
-      return [
-        {
-          type: 'PRICES_REVISED',
-          data: {
-            prices: cmd.data.sessions
-              .map((session) => {
-                const price =
-                  session.pathType === 'wlm'
-                    ? getWlmPrice(session.number, state)
-                    : getPsychotherapyPrice(session.number);
+      const prices: {
+        sessionId: string;
+        status: 'ESTIMATED' | 'VOIDED';
+        price: number;
+        reason: PriceReason;
+      }[] = [];
 
-                const existingPrice = state.prices.find((p) => p.id === session.id);
-                if (!existingPrice) {
-                  // new session
-                  return {
-                    sessionId: session.id,
-                    status: 'ESTIMATED' as const,
-                    price: price.price,
-                    reason: price.reason,
-                  };
-                }
+      cmd.data.sessions.forEach((session) => {
+        const price =
+          session.pathType === 'wlm' ? getWlmPrice(session.number, state) : getPsychotherapyPrice(session.number);
 
-                if (
-                  existingPrice?.status === 'CHARGED' ||
-                  existingPrice?.status === 'LOCKED' ||
-                  existingPrice?.status === 'VOIDED'
-                )
-                  return;
+        const existingPrice = state.prices.find((p) => p.id === session.id);
+        if (!existingPrice) {
+          prices.push({
+            sessionId: session.id,
+            status: 'ESTIMATED' as const,
+            price: price.price,
+            reason: price.reason,
+          });
+          return;
+        }
 
-                if (session.status === 'removed')
-                  return {
-                    sessionId: session.id,
-                    status: 'VOIDED' as const,
-                    price: price.price,
-                    reason: price.reason,
-                  };
+        if (['CHARGED', 'LOCKED', 'VOIDED'].includes(existingPrice.status)) return;
 
-                return {
-                  sessionId: session.id,
-                  status: 'ESTIMATED' as const,
-                  price: price.price,
-                  reason: price.reason,
-                };
-              })
-              .filter((p) => !!p),
-          },
-        },
-      ];
+        if (session.status === 'removed') {
+          prices.push({
+            sessionId: session.id,
+            status: 'VOIDED' as const,
+            price: price.price,
+            reason: price.reason,
+          });
+          return;
+        }
+
+        prices.push({
+          sessionId: session.id,
+          status: 'ESTIMATED' as const,
+          price: price.price,
+          reason: price.reason,
+        });
+      });
+
+      return [{ type: 'PRICES_REVISED', data: { prices } }];
     }
 
     case 'ADD_COVERAGE':

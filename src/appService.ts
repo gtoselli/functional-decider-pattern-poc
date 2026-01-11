@@ -63,12 +63,7 @@ export function createAppService(
         eventId: eventScheduledEvent.data.id,
       });
 
-      const pathSequenceChangedEvent = getEvent(clinicalEvents, 'PATH_SEQUENCE_CHANGED');
-
-      await economicsService.refreshPathEstimates({
-        patientId: params.patientId,
-        pathId: pathSequenceChangedEvent.data.id,
-      });
+      await economicsService.revisePatientEstimates({ patientId: params.patientId });
 
       return { sessionId: eventScheduledEvent.data.id };
     },
@@ -81,25 +76,17 @@ export function createAppService(
         sessionId: params.sessionId,
       });
 
-      const pathSequenceChangedEvent = getEvent(clinicalEvents, 'PATH_SEQUENCE_CHANGED');
-      await economicsService.refreshPathEstimates({
-        patientId: params.patientId,
-        pathId: pathSequenceChangedEvent.data.id,
-      });
+      await economicsService.revisePatientEstimates({ patientId: params.patientId });
     },
     async cancelSession(params: { patientId: string; sessionId: string }): Promise<void> {
       await bookingService.cancelEvent({ eventId: params.sessionId });
 
-      const clinicalEvents = await clinicalService.removeSession({
+      await clinicalService.removeSession({
         patientId: params.patientId,
         sessionId: params.sessionId,
       });
-      const pathSequenceChangedEvent = getEvent(clinicalEvents, 'PATH_SEQUENCE_CHANGED');
 
-      await economicsService.refreshPathEstimates({
-        patientId: params.patientId,
-        pathId: pathSequenceChangedEvent.data.id,
-      });
+      await economicsService.revisePatientEstimates({ patientId: params.patientId });
     },
     // async cancelPath(params: { patientId: string; pathId: string }): Promise<void> {},
 
