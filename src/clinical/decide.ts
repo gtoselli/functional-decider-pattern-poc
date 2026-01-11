@@ -37,7 +37,10 @@ export function decide(cmd: Command, state: State): Event[] {
       getSessionById(path, cmd.data.id);
 
       const events: Event[] = [
-        { data: { id: cmd.data.id, revokedAt: new Date(), pathId: path.id }, type: 'SESSION_REMOVED' },
+        {
+          data: { id: cmd.data.id, removedAt: new Date(), pathId: path.id, reason: cmd.data.reason },
+          type: 'SESSION_REMOVED',
+        },
       ];
 
       const remainingSessions = path.sessions

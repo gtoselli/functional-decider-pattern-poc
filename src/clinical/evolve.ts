@@ -26,7 +26,7 @@ export function evolve(state: State, event: Event): State {
                 ...p,
                 sessions: [
                   ...p.sessions,
-                  { id: event.data.id, startAt: event.data.startAt, number: 0, revokedAt: null },
+                  { id: event.data.id, startAt: event.data.startAt, number: 0, removedAt: null, removalReason: null },
                 ],
               }
             : p,
@@ -41,7 +41,9 @@ export function evolve(state: State, event: Event): State {
             ? {
                 ...p,
                 sessions: p.sessions.map((s) =>
-                  s.id === event.data.id ? { ...s, revokedAt: event.data.revokedAt } : s,
+                  s.id === event.data.id
+                    ? { ...s, removedAt: event.data.removedAt, removalReason: event.data.reason }
+                    : s,
                 ),
               }
             : p,

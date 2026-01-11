@@ -27,7 +27,8 @@ export function decide(cmd: Command, state: State): Event[] {
 
         if (['CHARGED', 'LOCKED', 'VOIDED'].includes(existingPrice.status)) return;
 
-        if (session.status === 'removed') {
+        // Normal cancellation: void the price
+        if (session.status === 'cancelled') {
           prices.push({
             sessionId: session.id,
             status: 'VOIDED' as const,
@@ -37,6 +38,7 @@ export function decide(cmd: Command, state: State): Event[] {
           return;
         }
 
+        // Active, late_cancelled, no_show: keep as ESTIMATED (will be charged)
         prices.push({
           sessionId: session.id,
           status: 'ESTIMATED' as const,

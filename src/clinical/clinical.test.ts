@@ -110,7 +110,7 @@ describe('clinicalDecider', () => {
           professionals: [],
           startedAt: expect.any(Date),
           type: 'psychotherapy',
-          sessions: [{ id: 's1', number: 1, startAt: new Date('2025-01-01'), revokedAt: null }],
+          sessions: [{ id: 's1', number: 1, startAt: new Date('2025-01-01'), removedAt: null, removalReason: null }],
         },
       ],
       id,
@@ -123,8 +123,10 @@ describe('clinicalDecider', () => {
 
     aggregate.run({ type: 'ADD_SESSION', data: { id: 's1', startAt: new Date('2025-01-01'), pathId } });
 
-    const events = aggregate.run({ type: 'REMOVE_SESSION', data: { id: 's1' } });
-    expect(events).toEqual([{ data: { id: 's1', revokedAt: expect.any(Date), pathId }, type: 'SESSION_REMOVED' }]);
+    const events = aggregate.run({ type: 'REMOVE_SESSION', data: { id: 's1', reason: 'cancelled' } });
+    expect(events).toEqual([
+      { data: { id: 's1', removedAt: expect.any(Date), pathId, reason: 'cancelled' }, type: 'SESSION_REMOVED' },
+    ]);
     expect(aggregate.getState()).toEqual({
       paths: [
         {
@@ -132,7 +134,15 @@ describe('clinicalDecider', () => {
           professionals: [],
           startedAt: expect.any(Date),
           type: 'psychotherapy',
-          sessions: [{ id: 's1', number: 1, startAt: new Date('2025-01-01'), revokedAt: expect.any(Date) }],
+          sessions: [
+            {
+              id: 's1',
+              number: 1,
+              startAt: new Date('2025-01-01'),
+              removedAt: expect.any(Date),
+              removalReason: 'cancelled',
+            },
+          ],
         },
       ],
       id,
@@ -169,8 +179,8 @@ describe('clinicalDecider', () => {
           startedAt: expect.any(Date),
           type: 'psychotherapy',
           sessions: [
-            { id: 's1', number: 1, startAt: new Date('2025-01-02'), revokedAt: null },
-            { id: 's2', number: 2, startAt: new Date('2025-01-03'), revokedAt: null },
+            { id: 's1', number: 1, startAt: new Date('2025-01-02'), removedAt: null, removalReason: null },
+            { id: 's2', number: 2, startAt: new Date('2025-01-03'), removedAt: null, removalReason: null },
           ],
         },
       ],
@@ -209,8 +219,8 @@ describe('clinicalDecider', () => {
           startedAt: expect.any(Date),
           type: 'psychotherapy',
           sessions: [
-            { id: 's1', number: 2, startAt: new Date('2025-01-03'), revokedAt: null },
-            { id: 's2', number: 1, startAt: new Date('2025-01-02'), revokedAt: null },
+            { id: 's1', number: 2, startAt: new Date('2025-01-03'), removedAt: null, removalReason: null },
+            { id: 's2', number: 1, startAt: new Date('2025-01-02'), removedAt: null, removalReason: null },
           ],
         },
       ],

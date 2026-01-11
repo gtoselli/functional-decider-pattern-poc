@@ -5,13 +5,25 @@ export type State = { id: string } & (
       status: 'scheduled';
       patientId: string;
       startAt: Date;
-      cancelledAt: Date | null;
       scheduledAt: Date;
+      outcome: EventOutcome;
     }
   | {
       status: 'initial';
     }
 );
+
+export type EventOutcome =
+  | null // Not yet resolved
+  | {
+      type: 'cancelled';
+      cancelledAt: Date;
+      cancellationType: CancellationType;
+    }
+  | {
+      type: 'no_show';
+      markedAt: Date;
+    };
 
 interface ScheduleEventCmd {
   type: 'SCHEDULE_EVENT';
@@ -25,7 +37,11 @@ interface CancelEventCmd {
   type: 'CANCEL_EVENT';
   data: {};
 }
-export type Command = ScheduleEventCmd | RescheduleEventCmd | CancelEventCmd;
+interface MarkEventAsNoShow {
+  type: 'MARK_AS_NO_SHOW';
+  data: {};
+}
+export type Command = ScheduleEventCmd | RescheduleEventCmd | CancelEventCmd | MarkEventAsNoShow;
 
 interface EventScheduledEvent {
   type: 'EVENT_SCHEDULED';
@@ -37,8 +53,14 @@ interface EventRescheduledEvent {
 }
 interface EventCancelledEvent {
   type: 'EVENT_CANCELLED';
-  data: { cancelledAt: Date };
+  data: { cancelledAt: Date; cancellationType: CancellationType };
 }
-export type Event = EventScheduledEvent | EventRescheduledEvent | EventCancelledEvent;
+interface EventMarkedAsNoShowEvent {
+  type: 'EVENT_MARKED_AS_NO_SHOW';
+  data: { markedAsNoShowAt: Date };
+}
+export type Event = EventScheduledEvent | EventRescheduledEvent | EventCancelledEvent | EventMarkedAsNoShowEvent;
 
 export type BookingDecider = Decider<State, Command, Event>;
+
+type CancellationType = 'late' | 'normal';

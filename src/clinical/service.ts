@@ -2,7 +2,7 @@ import type { createClinicalInMemRepo } from '../infra';
 import type { PathType } from '../shared-types';
 import { decide } from './decide';
 import { evolve } from './evolve';
-import type { ProfessionalRole } from './types';
+import type { ProfessionalRole, RemovalReason } from './types';
 
 export function createClinicalService(clinicalRepo: ReturnType<typeof createClinicalInMemRepo>) {
   return {
@@ -35,13 +35,13 @@ export function createClinicalService(clinicalRepo: ReturnType<typeof createClin
       return events;
     },
 
-    async removeSession(params: { patientId: string; sessionId: string }) {
+    async removeSession(params: { patientId: string; sessionId: string; reason: RemovalReason }) {
       const state = await clinicalRepo.getById(params.patientId);
 
       const events = decide(
         {
           type: 'REMOVE_SESSION',
-          data: { id: params.sessionId },
+          data: { id: params.sessionId, reason: params.reason },
         },
         state,
       );
@@ -108,7 +108,7 @@ export function createClinicalService(clinicalRepo: ReturnType<typeof createClin
           number: s.number,
           startAt: s.startAt,
           pathType: p.type,
-          status: s.revokedAt ? ('removed' as const) : ('active' as const),
+          status: s.removalReason === null ? ('active' as const) : s.removalReason,
         })),
       );
     },

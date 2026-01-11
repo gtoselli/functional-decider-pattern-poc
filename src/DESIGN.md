@@ -10,18 +10,38 @@ Il tuo path quindi cambia, come conseguenza di booking
 La parte di booking reagisce al cambio del path 
 
 
+## Cancellation & No-Show
+
+**Ownership:**
+- **Booking**: Decides categorization (normal/late cancellation based on 24hr threshold, no-show)
+- **Clinical**: Passes through removal reason, doesn't interpret (all are just "session didn't happen")
+- **Economics**: Reacts to reason for pricing (normal → void, late/no-show → charge)
+
+**Flow:**
+1. Booking emits: EVENT_CANCELLED{cancellationType: 'late'|'normal'} or EVENT_MARKED_NO_SHOW
+2. AppService maps to Clinical: removeSession({reason: 'cancelled'|'late_cancelled'|'no_show'})
+3. Clinical stores and returns reason via getSessions()
+4. Economics decides: 'cancelled' → VOIDED, 'late_cancelled'|'no_show' → ESTIMATED (charged)
+
+**State design:**
+- Booking uses discriminated union for outcome (prevents invalid states like both cancelled AND no-show)
+- Validations: can't cancel after session passed, can't mark no-show before session time
+
+---
+
 Booking
 - Schedule Event -> Event Scheduled
 - Reschedule Event -> Event Rescheduled
-- Cancel Event -> Event Cancelled
+- Cancel Event -> Event Cancelled (with cancellationType)
+- Mark As No Show -> Event Marked As No Show
 
 Clinical
 - Add Session -> Session Added / Session Classified
 - Reassess Session -> Session Classified
-- Revoke Session -> Session Revoked
+- Remove Session -> Session Removed (with reason)
 
 Economics
-- Quote Service -> Service Quoted
+- Revise Estimates -> Prices Revised
 
 
 ---

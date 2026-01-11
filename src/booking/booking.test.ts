@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDeciderAggregate } from '../@utils/decider';
 import { bookingDecider } from './index';
 import type { State } from './types';
@@ -10,6 +10,7 @@ describe('bookingDecider', () => {
   const aggregate = createDeciderAggregate(bookingDecider, INITIAL_STATE);
 
   beforeEach(() => {
+    vi.setSystemTime(new Date('2000-06-01'));
     aggregate.resetToInitialState();
   });
 
@@ -28,7 +29,7 @@ describe('bookingDecider', () => {
       },
     ]);
     expect(aggregate.getState()).toEqual({
-      cancelledAt: null,
+      outcome: null,
       startAt: new Date('2000-07-01'),
       id,
       patientId,
@@ -55,7 +56,7 @@ describe('bookingDecider', () => {
       },
     ]);
     expect(aggregate.getState()).toEqual({
-      cancelledAt: null,
+      outcome: null,
       patientId,
       startAt: new Date('2000-07-02'),
       id,
@@ -74,12 +75,16 @@ describe('bookingDecider', () => {
 
     expect(events).toEqual([
       {
-        data: { cancelledAt: expect.any(Date) },
+        data: { cancelledAt: expect.any(Date), cancellationType: 'normal' },
         type: 'EVENT_CANCELLED',
       },
     ]);
     expect(aggregate.getState()).toEqual({
-      cancelledAt: expect.any(Date),
+      outcome: {
+        type: 'cancelled',
+        cancelledAt: expect.any(Date),
+        cancellationType: 'normal',
+      },
       patientId,
       startAt: new Date('2000-07-01'),
       id,

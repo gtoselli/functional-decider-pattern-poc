@@ -13,7 +13,15 @@ export interface State {
 
 interface ReviseEstimatesCmd {
   type: 'REVISE_ESTIMATES';
-  data: { sessions: { id: string; startAt: Date; number: number; pathType: PathType; status: 'removed' | 'active' }[] };
+  data: {
+    sessions: {
+      id: string;
+      startAt: Date;
+      number: number;
+      pathType: PathType;
+      status: 'cancelled' | 'active' | 'late_cancelled' | 'no_show';
+    }[];
+  };
 }
 
 interface AddCoverageCmd {

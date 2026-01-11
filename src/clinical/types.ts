@@ -8,7 +8,13 @@ export interface State {
     type: PathType;
     startedAt: Date;
     professionals: { id: string; addedAt: Date; role: ProfessionalRole }[];
-    sessions: { id: string; number: number; startAt: Date; revokedAt: Date | null }[];
+    sessions: {
+      id: string;
+      number: number;
+      startAt: Date;
+      removedAt: Date | null;
+      removalReason: RemovalReason | null;
+    }[];
     cycle?: { startedAt: Date; endedAt?: Date };
   }[];
 }
@@ -25,7 +31,7 @@ interface ReassessSessionCmd {
 
 interface RemoveSessionCmd {
   type: 'REMOVE_SESSION';
-  data: { id: string };
+  data: { id: string; reason: RemovalReason };
 }
 
 interface AddProfessionalCmd {
@@ -57,7 +63,7 @@ interface SessionMovedEvent {
 
 interface SessionRemovedEvent {
   type: 'SESSION_REMOVED';
-  data: { id: string; revokedAt: Date; pathId: string };
+  data: { id: string; removedAt: Date; pathId: string; reason: RemovalReason };
 }
 
 interface ProfessionalAddedEvent {
@@ -81,3 +87,5 @@ export type Event =
 export type ClinicalDecider = Decider<State, Command, Event>;
 
 export type ProfessionalRole = 'professional' | 'dietitian' | 'nutritionist';
+
+export type RemovalReason = 'cancelled' | 'late_cancelled' | 'no_show';

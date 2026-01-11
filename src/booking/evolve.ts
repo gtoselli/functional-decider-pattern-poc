@@ -7,16 +7,20 @@ export function evolve(state: State, event: Event): State {
         id: event.data.id,
         patientId: event.data.patientId,
         startAt: event.data.startAt,
-        cancelledAt: null,
         status: 'scheduled',
         scheduledAt: event.data.scheduledAt,
+        outcome: null,
       };
     }
     case 'EVENT_CANCELLED': {
       if (state.status !== 'scheduled') return state;
       return {
         ...state,
-        cancelledAt: event.data.cancelledAt,
+        outcome: {
+          type: 'cancelled',
+          cancelledAt: event.data.cancelledAt,
+          cancellationType: event.data.cancellationType,
+        },
       };
     }
     case 'EVENT_RESCHEDULED': {
@@ -26,6 +30,16 @@ export function evolve(state: State, event: Event): State {
         startAt: event.data.startAt,
       };
     }
+    case 'EVENT_MARKED_AS_NO_SHOW':
+      if (state.status !== 'scheduled') return state;
+      return {
+        ...state,
+        outcome: {
+          type: 'no_show',
+          markedAt: event.data.markedAsNoShowAt,
+        },
+      };
+
     default: {
       const _exhaustive: never = event;
       return _exhaustive;

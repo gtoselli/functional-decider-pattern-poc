@@ -56,7 +56,7 @@ export function createAppService(
       });
       const eventScheduledEvent = getEvent(bookingEvents, 'EVENT_SCHEDULED');
 
-      const clinicalEvents = await clinicalService.addSession({
+      await clinicalService.addSession({
         patientId: params.patientId,
         pathId: params.pathId,
         startAt: params.startAt,
@@ -70,7 +70,7 @@ export function createAppService(
     async rescheduleSession(params: { patientId: string; sessionId: string; startAt: Date }): Promise<void> {
       await bookingService.rescheduleEvent({ eventId: params.sessionId, startAt: params.startAt });
 
-      const clinicalEvents = await clinicalService.reassessSession({
+      await clinicalService.reassessSession({
         patientId: params.patientId,
         startAt: params.startAt,
         sessionId: params.sessionId,
@@ -79,11 +79,24 @@ export function createAppService(
       await economicsService.revisePatientEstimates({ patientId: params.patientId });
     },
     async cancelSession(params: { patientId: string; sessionId: string }): Promise<void> {
-      await bookingService.cancelEvent({ eventId: params.sessionId });
+      const bookingEvents = await bookingService.cancelEvent({ eventId: params.sessionId });
+      const eventCancelledEvent = getEvent(bookingEvents, 'EVENT_CANCELLED');
 
       await clinicalService.removeSession({
         patientId: params.patientId,
         sessionId: params.sessionId,
+        reason: eventCancelledEvent.data.cancellationType === 'late' ? 'late_cancelled' : 'cancelled',
+      });
+
+      await economicsService.revisePatientEstimates({ patientId: params.patientId });
+    },
+    async markSessionAsNoShow(params: { patientId: string; sessionId: string }): Promise<void> {
+      await bookingService.markEventAsNoShow({ eventId: params.sessionId });
+
+      await clinicalService.removeSession({
+        patientId: params.patientId,
+        sessionId: params.sessionId,
+        reason: 'no_show',
       });
 
       await economicsService.revisePatientEstimates({ patientId: params.patientId });

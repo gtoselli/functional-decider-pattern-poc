@@ -40,6 +40,18 @@ export function createBookingService(bookingRepo: ReturnType<typeof createBookin
       return events;
     },
 
+    async markEventAsNoShow(params: { eventId: string }) {
+      const event = await bookingRepo.getById(params.eventId);
+
+      const events = event.run({
+        type: 'MARK_AS_NO_SHOW',
+        data: {},
+      });
+
+      await bookingRepo.save(event);
+      return events;
+    },
+
     async getEvent(eventId: string) {
       return (await bookingRepo.getById(eventId)).getState();
     },

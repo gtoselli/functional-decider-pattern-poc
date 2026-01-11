@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createAppService } from './appService';
 import { createBookingService } from './booking/service';
 import { createClinicalService } from './clinical/service';
@@ -68,7 +68,7 @@ describe('appService', () => {
             id: sessionId,
             startAt: expect.any(Date),
             number: 1,
-            revokedAt: null,
+            removedAt: null,
           },
         ],
       });
@@ -93,14 +93,14 @@ describe('appService', () => {
         event: {
           id: expect.any(String),
           startAt,
-          cancelledAt: null,
+          outcome: null,
           patientId,
         },
         session: {
           id: expect.any(String),
           startAt,
           number: 1,
-          revokedAt: null,
+          removedAt: null,
         },
         billableSession: {
           id: expect.any(String),
@@ -168,12 +168,13 @@ describe('appService', () => {
       await service.scheduleSession({ patientId, startAt: new Date('2026-01-02'), pathId });
       await service.scheduleSession({ patientId, startAt: new Date('2026-01-03'), pathId });
 
+      vi.setSystemTime('2025-12-01Z');
       await service.cancelSession({ sessionId, patientId });
     });
 
     it('should revoke session in clinical context', async () => {
       expect(await clinicalService.getPath(patientId, pathId)).toMatchObject({
-        sessions: expect.arrayContaining([expect.objectContaining({ id: sessionId, revokedAt: expect.any(Date) })]),
+        sessions: expect.arrayContaining([expect.objectContaining({ id: sessionId, removedAt: expect.any(Date) })]),
       });
     });
 
@@ -185,7 +186,11 @@ describe('appService', () => {
 
     it('should cancel event in booking context', async () => {
       expect(await bookingService.getEvent(sessionId)).toMatchObject({
-        cancelledAt: expect.any(Date),
+        outcome: {
+          type: 'cancelled',
+          cancelledAt: expect.any(Date),
+          cancellationType: 'normal',
+        },
       });
     });
 
