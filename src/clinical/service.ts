@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import type { createClinicalInMemRepo2 } from '../infra';
+import type { createClinicalInMemRepo } from '../infra';
 import type { PathType } from '../shared-types';
 import { decide } from './decide';
 import { evolve } from './evolve';
 import type { ProfessionalRole } from './types';
 
-export function createClinicalService(clinicalRepo: ReturnType<typeof createClinicalInMemRepo2>) {
+export function createClinicalService(clinicalRepo: ReturnType<typeof createClinicalInMemRepo>) {
   return {
     async addSession(params: { patientId: string; startAt: Date; pathId: string }) {
       const state = await clinicalRepo.getById(params.patientId);
@@ -96,6 +96,22 @@ export function createClinicalService(clinicalRepo: ReturnType<typeof createClin
 
     async getPaths(patientId: string) {
       return await clinicalRepo.getById(patientId);
+    },
+
+    async getSessions(patientId: string) {
+      const state = await clinicalRepo.getById(patientId);
+      const path = state.paths;
+      if (!path) throw new Error('Path not found');
+
+      return state.paths.flatMap((p) =>
+        p.sessions.map((s) => ({
+          id: s.id,
+          number: s.number,
+          startAt: s.startAt,
+          pathType: p.type,
+          status: s.revokedAt ? 'removed' : 'active',
+        })),
+      );
     },
   };
 }

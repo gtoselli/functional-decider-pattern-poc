@@ -2,11 +2,11 @@ import { getEvent } from './@utils/events';
 import type { BookingService } from './booking/service';
 import type { ClinicalService } from './clinical/service';
 import type { ProfessionalRole } from './clinical/types';
-import type { EconomicsService } from './economics/service';
+import type { EconomicsService2 } from './economics/service';
 import type { PathType } from './shared-types';
 
 export function createAppService(
-  economicsService: EconomicsService,
+  economicsService: EconomicsService2,
   clinicalService: ClinicalService,
   bookingService: BookingService,
 ) {
@@ -64,17 +64,10 @@ export function createAppService(
         eventId: sessionAddedEvent.data.id,
       });
 
-      const path = await clinicalService.getPath(params.patientId, pathSequenceChangedEvent.data.id);
-      await Promise.all(
-        pathSequenceChangedEvent.data.sessions.flatMap((session) =>
-          economicsService.placeSessionOrder({
-            patientId: params.patientId,
-            sessionId: session.id,
-            sessionNumber: session.number,
-            pathType: path.type,
-          }),
-        ),
-      );
+      await economicsService.refreshPathEstimates({
+        patientId: params.patientId,
+        pathId: pathSequenceChangedEvent.data.id,
+      });
 
       return { sessionId: sessionAddedEvent.data.id };
     },
@@ -87,17 +80,10 @@ export function createAppService(
       await bookingService.rescheduleEvent({ eventId: params.sessionId, startAt: params.startAt });
 
       const pathSequenceChangedEvent = getEvent(clinicalEvents, 'PATH_SEQUENCE_CHANGED');
-      const path = await clinicalService.getPath(params.patientId, pathSequenceChangedEvent.data.id);
-      await Promise.all(
-        pathSequenceChangedEvent.data.sessions.flatMap((session) =>
-          economicsService.placeSessionOrder({
-            patientId: params.patientId,
-            sessionId: session.id,
-            sessionNumber: session.number,
-            pathType: path.type,
-          }),
-        ),
-      );
+      await economicsService.refreshPathEstimates({
+        patientId: params.patientId,
+        pathId: pathSequenceChangedEvent.data.id,
+      });
     },
     async cancelSession(params: { patientId: string; sessionId: string }): Promise<void> {
       const clinicalEvents = await clinicalService.removeSession({
@@ -105,25 +91,12 @@ export function createAppService(
         sessionId: params.sessionId,
       });
       const pathSequenceChangedEvent = getEvent(clinicalEvents, 'PATH_SEQUENCE_CHANGED');
-      const sessionRevokedEvent = getEvent(clinicalEvents, 'SESSION_REMOVED');
 
       await bookingService.cancelEvent({ eventId: params.sessionId });
 
-      const path = await clinicalService.getPath(params.patientId, pathSequenceChangedEvent.data.id);
-      await Promise.all(
-        pathSequenceChangedEvent.data.sessions.flatMap((session) =>
-          economicsService.placeSessionOrder({
-            patientId: params.patientId,
-            sessionId: session.id,
-            sessionNumber: session.number,
-            pathType: path.type,
-          }),
-        ),
-      );
-
-      await economicsService.voidSessionOrder({
+      await economicsService.refreshPathEstimates({
         patientId: params.patientId,
-        sessionId: sessionRevokedEvent.data.id,
+        pathId: pathSequenceChangedEvent.data.id,
       });
     },
     // async cancelPath(params: { patientId: string; pathId: string }): Promise<void> {},
@@ -132,7 +105,7 @@ export function createAppService(
       const event = await bookingService.getEvent(sessionId);
 
       const session = await clinicalService.getSession(patientId, sessionId);
-      const billableSession = await economicsService.getSessionOrder(sessionId);
+      const billableSession = await economicsService.getSessionPrice(patientId, sessionId);
       if (!event || !session || !billableSession) throw new Error('Session not found');
       return { event, session, billableSession };
     },

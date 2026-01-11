@@ -4,16 +4,11 @@ import { createAppService } from './appService';
 import { createBookingService } from './booking/service';
 import { createClinicalService } from './clinical/service';
 import { createEconomicsService } from './economics/service';
-import {
-  createBookingInMemRepo,
-  createClinicalInMemRepo2,
-  createPatientEconomicsInMemRepo,
-  createSessionOrderInMemRepo,
-} from './infra';
+import { createBookingInMemRepo, createClinicalInMemRepo, createPatientEconomics2InMemRepo } from './infra';
 
 describe('appService', () => {
-  const clinicalService = createClinicalService(createClinicalInMemRepo2());
-  const economicsService = createEconomicsService(createSessionOrderInMemRepo(), createPatientEconomicsInMemRepo());
+  const clinicalService = createClinicalService(createClinicalInMemRepo());
+  const economicsService = createEconomicsService(createPatientEconomics2InMemRepo(), clinicalService);
   const bookingService = createBookingService(createBookingInMemRepo());
   const service = createAppService(economicsService, clinicalService, bookingService);
 
@@ -84,9 +79,10 @@ describe('appService', () => {
     });
 
     it('should quote price in economics context', async () => {
-      expect(await economicsService.getSessionOrder(sessionId)).toMatchObject({
+      expect(await economicsService.getSessionPrice(patientId, sessionId)).toMatchObject({
         id: sessionId,
-        cost: 0,
+        status: 'ESTIMATED',
+        price: 0,
         reason: 'first_session',
       });
     });
@@ -108,7 +104,8 @@ describe('appService', () => {
         },
         billableSession: {
           id: expect.any(String),
-          cost: 0,
+          status: 'ESTIMATED',
+          price: 0,
           reason: 'first_session',
         },
       });
@@ -147,10 +144,10 @@ describe('appService', () => {
     });
 
     it('should re quote other prices in economics context', async () => {
-      expect(await economicsService.getSessionOrders(patientId)).toEqual([
-        expect.objectContaining({ id: sessionId, cost: 4500, voidedAt: null }),
-        expect.objectContaining({ cost: 0, voidedAt: null }),
-        expect.objectContaining({ cost: 4500, voidedAt: null }),
+      expect(await economicsService.getSessionsPrice(patientId)).toEqual([
+        expect.objectContaining({ id: sessionId, price: 4500, status: 'ESTIMATED' }),
+        expect.objectContaining({ price: 0, status: 'ESTIMATED' }),
+        expect.objectContaining({ price: 4500, status: 'ESTIMATED' }),
       ]);
     });
   });
@@ -193,14 +190,16 @@ describe('appService', () => {
     });
 
     it('should release quote in economics context', async () => {
-      expect(await economicsService.getSessionOrder(sessionId)).toMatchObject({ voidedAt: expect.any(Date) });
+      expect(await economicsService.getSessionPrice(patientId, sessionId)).toMatchObject({
+        status: 'VOIDED',
+      });
     });
 
     it('should re quote other prices in economics context', async () => {
-      expect(await economicsService.getSessionOrders(patientId)).toEqual([
-        expect.objectContaining({ id: sessionId, cost: 0, voidedAt: expect.any(Date) }),
-        expect.objectContaining({ cost: 0 }),
-        expect.objectContaining({ cost: 4500 }),
+      expect(await economicsService.getSessionsPrice(patientId)).toEqual([
+        expect.objectContaining({ id: sessionId, price: 0, status: 'VOIDED' }),
+        expect.objectContaining({ price: 0 }),
+        expect.objectContaining({ price: 4500 }),
       ]);
     });
   });

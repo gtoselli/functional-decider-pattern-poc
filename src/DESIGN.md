@@ -1,8 +1,13 @@
 
 Three different contexts:
 - booking. Talks about "event"
-- clinical. Talks about "session"
+- clinical. Talks about "session" (step in a path)
 - economics. Talks about "service"
+
+
+Booking guida, aggiunge/toglie.
+Il tuo path quindi cambia, come conseguenza di booking
+La parte di booking reagisce al cambio del path 
 
 
 Booking
